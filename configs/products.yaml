@@ -1,0 +1,28 @@
+dataset:
+  name: "ogbn-products"
+  classes_per_task: 2
+  train_ratio: 0.6
+  val_ratio: 0.2
+  test_ratio: 0.2
+  data_dir: "./data"
+
+model:
+  backbone: "SGC"
+  hidden_dim: 256
+  dropout: 0.5
+  num_layers: 2
+  prompt_vectors_k: 2
+  temperature: 0.5
+  alpha: 0.6
+
+pretrain:
+  lr: 0.001
+  epochs: 30
+  edge_dropout: 0.2
+  feature_mask: 0.2
+  weight_decay: 5e-4
+
+continual:
+  lr: 0.005
+  epochs: 30
+  weight_decay: 5e-4
