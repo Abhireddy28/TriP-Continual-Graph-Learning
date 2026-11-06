@@ -33,6 +33,14 @@ class CGLBDatasetManager:
         torch.manual_seed(self.seed)
         np.random.seed(self.seed)
 
+        # PyTorch 2.6+ compatibility: defaults weights_only=False when unpickling PyG / OGB objects
+        _orig_torch_load = torch.load
+        def _compat_load(*args, **kwargs):
+            if "weights_only" not in kwargs:
+                kwargs["weights_only"] = False
+            return _orig_torch_load(*args, **kwargs)
+        torch.load = _compat_load
+
         print(f"[Dataset] Loading/Downloading {self.dataset_name} automatically...")
         if self.dataset_name.lower() == "corafull":
             from torch_geometric.datasets import CitationFull
@@ -140,3 +148,4 @@ class CGLBDatasetManager:
             "num_features": x.shape[1],
             "total_classes": num_classes
         }
+
