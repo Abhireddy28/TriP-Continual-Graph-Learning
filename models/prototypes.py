@@ -1,21 +1,28 @@
 import torch
 import torch.nn.functional as F
 
-def compute_sinkhorn_wasserstein(X, Y, reg=0.1, max_iter=20):
+def compute_sinkhorn_wasserstein(X, Y, reg=0.2, max_iter=20):
     """
     Computes regularized 2-Wasserstein distance between empirical distributions
     represented by point sets X and Y via the Sinkhorn-Knopp algorithm.
+    Uses L2-normalized cosine distance cost to prevent dimensional overflow/underflow.
     X: shape (N, d), Y: shape (M, d)
     """
+    # L2 normalize vectors to prevent dimensional underflow when d is large (e.g. d=8710)
+    X_norm = F.normalize(X, p=2, dim=-1)
+    Y_norm = F.normalize(Y, p=2, dim=-1)
+
+    # Cosine distance cost matrix bounded in [0, 2]
+    C = 1.0 - torch.matmul(X_norm, Y_norm.t())
+    C = torch.clamp(C, min=0.0)
+
+    # Kernel matrix
+    K = torch.exp(-C / reg)
+
     N = X.shape[0]
     M = Y.shape[0]
     a = torch.ones(N, device=X.device) / N
     b = torch.ones(M, device=Y.device) / M
-
-    # Pairwise squared Euclidean cost matrix
-    C = torch.cdist(X, Y, p=2).pow(2)
-    # Kernel matrix
-    K = torch.exp(-C / reg)
 
     u = torch.ones_like(a)
     for _ in range(max_iter):
@@ -30,8 +37,8 @@ class TaskPrototypeBuffer:
     """
     [Upgrade 3] Dual-Mode Task Prototype Buffer:
       Mode 1: Standard TriP centroid mean-pooling (Eq. 3 & Eq. 17)
-      Mode 2: Optimal Transport / Wasserstein Distribution Matching via Sinkhorn distance
-              Eliminates task confusion caused by mean-pooling compression (Section 5.7)
+      Mode 2: Joint Centroid-Wasserstein Manifold Router via Sinkhorn distance
+              Eliminates task confusion caused by single-point mean compression (Section 5.7)
     """
     def __init__(self, num_support_nodes=24, use_wasserstein=True):
         self.prototypes = {}          # task_id -> mean tensor of shape (d,)
@@ -78,19 +85,25 @@ class TaskPrototypeBuffer:
 
     def query_task_wasserstein(self, test_x):
         """
-        Queries task ID via minimal Wasserstein transport cost to support distributions.
+        Joint Centroid-Manifold Wasserstein Routing:
+          Score(t) = cos(m_test, m_t) - 0.5 * W_2(mu_test, mu_t)
+        Combines macro-centroid anchor with micro-distribution optimal transport.
         """
+        m_test = test_x.mean(dim=0)
         n_test_samples = min(test_x.shape[0], self.num_support_nodes)
         perm = torch.randperm(test_x.shape[0])[:n_test_samples]
         sub_test_x = test_x[perm]
 
         best_task_id = 0
-        min_w_dist = float('inf')
+        best_score = -float('inf')
 
         for task_id, supp in self.support_samples.items():
-            dist = compute_sinkhorn_wasserstein(sub_test_x, supp, reg=0.1, max_iter=15)
-            if dist < min_w_dist:
-                min_w_dist = dist
+            cos_sim = F.cosine_similarity(m_test.unsqueeze(0), self.prototypes[task_id].unsqueeze(0)).item()
+            w_dist = compute_sinkhorn_wasserstein(sub_test_x, supp, reg=0.2, max_iter=15)
+            # Higher cosine similarity, lower transport distance -> maximum score
+            score = cos_sim - 0.5 * w_dist
+            if score > best_score:
+                best_score = score
                 best_task_id = task_id
 
         return best_task_id

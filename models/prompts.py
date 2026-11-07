@@ -72,15 +72,16 @@ class TopologyPrompt(nn.Module):
     Dynamically modulates graph message-passing topology (A_t) for task t.
     Solves TriP's limitation of only prompting node features X while ignoring graph structure A.
     
-    Equation:
-      gamma_uv = sigmoid(z_u^T z_v + b_t) * 2.0
+    Residual formulation:
+      gamma_uv = 1.0 + 0.2 * tanh( (z_u * z_v) / sqrt(d) )
       w_hat_uv = w_uv * gamma_uv
     """
     def __init__(self, in_features, hidden_dim=16):
         super(TopologyPrompt, self).__init__()
+        self.hidden_dim = hidden_dim
         # Low-rank topological projection layer
         self.topo_proj = nn.Linear(in_features, hidden_dim, bias=False)
-        self.edge_bias = nn.Parameter(torch.zeros(1))
+        self.scale = 1.0 / (hidden_dim ** 0.5)
         self.reset_parameters()
 
     def reset_parameters(self):
@@ -93,9 +94,9 @@ class TopologyPrompt(nn.Module):
         row, col = edge_index
         z = self.topo_proj(x)  # shape (N, hidden_dim)
         
-        # Edge affinity scores
-        edge_scores = (z[row] * z[col]).sum(dim=-1) + self.edge_bias
-        # Modulation factor centered around 1.0 (sigmoid * 2.0)
-        gamma = torch.sigmoid(edge_scores) * 2.0
+        # Scaled dot-product edge affinity scores
+        edge_scores = (z[row] * z[col]).sum(dim=-1) * self.scale
+        # Residual scaling centered around 1.0 within range [0.8, 1.2]
+        gamma = 1.0 + 0.2 * torch.tanh(edge_scores)
         return gamma
 
