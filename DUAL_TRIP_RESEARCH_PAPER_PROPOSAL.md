@@ -128,3 +128,4 @@ $$t^* = \arg\min_{1 \le i \le T} \mathcal{W}_{\epsilon}(\mu_{test}, \mu_i)$$
 | **Continual Pipeline** | CGLB 2-class incremental tasks | Implemented in `datasets/cglb_dataset.py` |
 | **Ablation Studies** | Baseline TriP vs +Topo vs +Wasserstein vs Dual-TriP | Flags ready in `main.py` (`--disable_topology_prompt`, etc.) |
 | **Visual Assets** | Performance heatmap & Sinkhorn hit-rate plot | Automated in `evaluate/metrics.py` |
+
