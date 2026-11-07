@@ -240,3 +240,4 @@ Each cell $M_{i, j}$ records the test accuracy on Task $j$ after the model has c
 
 ### Q10. What GNN backbones did you use for different datasets and why?
 > **Answer:** We used a **2-layer GCN** for CoraFull and OGBN-Arxiv. For larger, denser datasets like Reddit and Amazon Products, we used a **2-layer SGC (Simplifying Graph Convolution)** to avoid memory overhead and ensure fast training.
+

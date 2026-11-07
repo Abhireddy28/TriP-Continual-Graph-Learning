@@ -3,28 +3,33 @@ import torch.nn as nn
 import torch.nn.functional as F
 
 from .backbone import GCNBackbone, SGCBackbone
-from .prompts import FeaturePrompt, ClassPrompt
+from .prompts import FeaturePrompt, ClassPrompt, TopologyPrompt
 from .prototypes import TaskPrototypeBuffer, ClassPrototypeBuffer
 
 class TriPFramework(nn.Module):
     """
-    TriP: Triple-Prompt Framework Aligning Pre-training and Class-Incremental Objectives.
+    Dual-TriP: Enhanced Triple-Prompt Framework with Dual-Space (Feature + Topological)
+    Prompting and Optimal Transport (Wasserstein) Task Query Routing.
     
     Components:
       1. Pre-trained and Frozen GNN Backbone (GCN / SGC)
-      2. Task-specific Feature Prompts (GPF-plus)
-      3. Task-specific Class Prompts (Gating)
-      4. Unified Prompt Template Loss (Positive & Negative Prototype Alignment)
-      5. Task Prototype and Class Prototype Buffers
+      2. Feature Prompt Module (GPF-plus) -> Adapts Node Features X
+      3. [Upgrade 1] Topological Structural Prompt Module -> Adapts Graph Message-Passing Topology A
+      4. Class Prompt Module (Gating) -> Separates Output Class Embeddings
+      5. Unified Prompt Template Loss -> Prototype Contrastive Learning
+      6. [Upgrade 3] Wasserstein Task Prototype Router -> Distribution Matching via Sinkhorn Distance
     """
     def __init__(self, in_features, hidden_dim=256, backbone_type="GCN", 
-                 prompt_k=2, temperature=0.5, alpha=0.4, device="cpu"):
+                 prompt_k=2, temperature=0.5, alpha=0.4, 
+                 use_topology_prompt=True, use_wasserstein=True, device="cpu"):
         super(TriPFramework, self).__init__()
         self.in_features = in_features
         self.hidden_dim = hidden_dim
         self.temperature = temperature
         self.alpha = alpha
         self.prompt_k = prompt_k
+        self.use_topology_prompt = use_topology_prompt
+        self.use_wasserstein = use_wasserstein
         self.device = device
 
         # 1. Backbone GNN
@@ -38,9 +43,11 @@ class TriPFramework(nn.Module):
         # 2. Prompts storage per task
         self.feature_prompts = nn.ModuleDict()
         self.class_prompts = nn.ModuleDict()
+        if self.use_topology_prompt:
+            self.topology_prompts = nn.ModuleDict()
 
-        # 3. Buffers for prototypes
-        self.task_prototype_buffer = TaskPrototypeBuffer()
+        # 3. Buffers for prototypes (with Optimal Transport Wasserstein Router)
+        self.task_prototype_buffer = TaskPrototypeBuffer(use_wasserstein=use_wasserstein)
         self.class_prototype_buffer = ClassPrototypeBuffer()
 
     def freeze_backbone(self):
@@ -48,24 +55,33 @@ class TriPFramework(nn.Module):
         for param in self.backbone.parameters():
             param.requires_grad = False
         self.backbone.eval()
-        print("[TriP] Backbone GNN successfully frozen.")
+        print("[Dual-TriP] Backbone GNN successfully frozen.")
 
     def add_task_prompts(self, task_id):
-        """Creates lightweight Feature and Class prompt modules for task t."""
+        """Creates lightweight Feature, Class, and Topological prompt modules for task t."""
         str_id = str(task_id)
         fp = FeaturePrompt(self.in_features, num_prompts_k=self.prompt_k).to(self.device)
         cp = ClassPrompt(self.hidden_dim).to(self.device)
         self.feature_prompts[str_id] = fp
         self.class_prompts[str_id] = cp
 
+        if self.use_topology_prompt:
+            tp = TopologyPrompt(self.in_features, hidden_dim=16).to(self.device)
+            self.topology_prompts[str_id] = tp
+
     def get_task_prompts(self, task_id):
         str_id = str(task_id)
-        return self.feature_prompts[str_id], self.class_prompts[str_id]
+        fp = self.feature_prompts[str_id]
+        cp = self.class_prompts[str_id]
+        tp = self.topology_prompts[str_id] if self.use_topology_prompt else None
+        return fp, cp, tp
 
     def encode(self, x, edge_index, task_id):
         """
-        Calculates class-prompted representations:
-          h_tilde_v = f_theta(x_v + p_v) * q_t^cls  (Eq. 15)
+        Calculates Dual-Space prompted representations:
+          X_hat = x + p_fea
+          A_hat = A * gamma_topo
+          h_tilde_v = f_theta(X_hat, A_hat) * q_t^cls
         """
         str_id = str(task_id)
         fp = self.feature_prompts[str_id]
@@ -73,9 +89,17 @@ class TriPFramework(nn.Module):
 
         # 1. Feature Prompt modification
         x_prompted = fp(x)
-        # 2. Frozen GNN encoding
-        h = self.backbone(x_prompted, edge_index)
-        # 3. Class Prompt feature-wise gating
+
+        # 2. Topological Structural Prompt modulation (Upgrade 1)
+        if self.use_topology_prompt and str_id in self.topology_prompts:
+            edge_mod = self.topology_prompts[str_id](x, edge_index)
+        else:
+            edge_mod = None
+
+        # 3. Frozen GNN encoding with dual-space prompts
+        h = self.backbone(x_prompted, edge_index, edge_weight_mod=edge_mod)
+
+        # 4. Class Prompt feature-wise gating
         h_tilde = cp(h)
         # L2-normalize for stable cosine similarity
         h_tilde = F.normalize(h_tilde, p=2, dim=-1)

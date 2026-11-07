@@ -65,3 +65,37 @@ class ClassPrompt(nn.Module):
         Output: h_tilde of shape (N, D)
         """
         return h * self.q_cls
+
+class TopologyPrompt(nn.Module):
+    """
+    [Upgrade 1] Topological-Structural Prompt Module.
+    Dynamically modulates graph message-passing topology (A_t) for task t.
+    Solves TriP's limitation of only prompting node features X while ignoring graph structure A.
+    
+    Equation:
+      gamma_uv = sigmoid(z_u^T z_v + b_t) * 2.0
+      w_hat_uv = w_uv * gamma_uv
+    """
+    def __init__(self, in_features, hidden_dim=16):
+        super(TopologyPrompt, self).__init__()
+        # Low-rank topological projection layer
+        self.topo_proj = nn.Linear(in_features, hidden_dim, bias=False)
+        self.edge_bias = nn.Parameter(torch.zeros(1))
+        self.reset_parameters()
+
+    def reset_parameters(self):
+        nn.init.xavier_uniform_(self.topo_proj.weight)
+
+    def forward(self, x, edge_index):
+        """
+        Computes edge modulation factor gamma of shape (|E|,)
+        """
+        row, col = edge_index
+        z = self.topo_proj(x)  # shape (N, hidden_dim)
+        
+        # Edge affinity scores
+        edge_scores = (z[row] * z[col]).sum(dim=-1) + self.edge_bias
+        # Modulation factor centered around 1.0 (sigmoid * 2.0)
+        gamma = torch.sigmoid(edge_scores) * 2.0
+        return gamma
+

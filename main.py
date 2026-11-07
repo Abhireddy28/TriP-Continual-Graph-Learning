@@ -17,6 +17,8 @@ def parse_args():
     parser.add_argument("--device", type=str, default="cuda" if torch.cuda.is_available() else "cpu", help="Device (cuda/cpu)")
     parser.add_argument("--pretrain_epochs", type=int, default=None, help="Override pretrain epochs")
     parser.add_argument("--continual_epochs", type=int, default=None, help="Override continual epochs")
+    parser.add_argument("--disable_topology_prompt", action="store_true", help="Disable Upgrade 1 Topological Prompt")
+    parser.add_argument("--disable_wasserstein", action="store_true", help="Disable Upgrade 3 Wasserstein Router")
     return parser.parse_args()
 
 def main():
@@ -28,8 +30,13 @@ def main():
 
     dataset_name = args.dataset if args.dataset is not None else cfg["dataset"]["name"]
     device = torch.device(args.device)
-    print(f"=== TriP Continual Graph Learning ===")
-    print(f"Running on Dataset: {dataset_name} | Target Device: {device}")
+    use_topo = not args.disable_topology_prompt
+    use_wass = not args.disable_wasserstein
+
+    print(f"=== Dual-TriP: Continual Graph Learning ===")
+    print(f"Dataset: {dataset_name} | Device: {device}")
+    print(f"[Upgrade 1] Topological Structural Prompt: {'ENABLED' if use_topo else 'DISABLED'}")
+    print(f"[Upgrade 3] Wasserstein (Sinkhorn) Task Router: {'ENABLED' if use_wass else 'DISABLED'}")
 
     # 1. Prepare Dataset and Incremental Tasks
     manager = CGLBDatasetManager(
@@ -47,7 +54,7 @@ def main():
     y = data_dict["y"].to(device)
     tasks = data_dict["tasks"]
 
-    # 2. Initialize TriP Model
+    # 2. Initialize Dual-TriP Model
     model = TriPFramework(
         in_features=data_dict["num_features"],
         hidden_dim=cfg["model"].get("hidden_dim", 256),
@@ -55,6 +62,8 @@ def main():
         prompt_k=cfg["model"].get("prompt_vectors_k", 2),
         temperature=cfg["model"].get("temperature", 0.5),
         alpha=cfg["model"].get("alpha", 0.4),
+        use_topology_prompt=use_topo,
+        use_wasserstein=use_wass,
         device=device
     ).to(device)
 

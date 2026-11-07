@@ -34,12 +34,15 @@ class ContinualTrainer:
             # 1. Compute and register task prototype m_t (Eq. 3)
             self.model.task_prototype_buffer.register_task_prototype(t, x, train_nodes)
 
-            # 2. Add lightweight Feature and Class prompts for task t
+            # 2. Add lightweight Feature, Class, and Topological prompts for task t
             self.model.add_task_prompts(t)
-            fp, cp = self.model.get_task_prompts(t)
+            prompts = self.model.get_task_prompts(t)
 
             # 3. Setup optimizer exclusively for current task's prompt parameters
-            prompt_params = list(fp.parameters()) + list(cp.parameters())
+            prompt_params = []
+            for p_mod in prompts:
+                if p_mod is not None:
+                    prompt_params.extend(list(p_mod.parameters()))
             optimizer = torch.optim.Adam(prompt_params, lr=self.lr, weight_decay=self.weight_decay)
 
             # Initial prototype computation before training
