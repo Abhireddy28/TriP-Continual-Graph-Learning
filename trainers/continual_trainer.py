@@ -1,5 +1,6 @@
 import torch
 import numpy as np
+from models.backbone import clear_adj_cache
 
 class ContinualTrainer:
     """
@@ -79,6 +80,9 @@ class ContinualTrainer:
             # Freeze current prompt parameters permanently
             for p in prompt_params:
                 p.requires_grad = False
+            del optimizer
+            if torch.cuda.is_available():
+                torch.cuda.empty_cache()
 
             # 5. Evaluate after learning task t across all seen tasks j <= t
             print(f"\n--- Evaluating after Task {t + 1} across all {len(observed_classes)} seen classes ---")
@@ -90,6 +94,11 @@ class ContinualTrainer:
                 acc = (preds == test_y).float().mean().item() * 100.0
                 self.accuracy_matrix[t, j] = acc
                 print(f"  Accuracy on Task {j + 1} test set: {acc:.2f}%")
+
+            if torch.cuda.is_available():
+                torch.cuda.empty_cache()
+
+        clear_adj_cache()
 
         # 6. Compute Final Continual Metrics (Eq. 19)
         T = self.num_tasks

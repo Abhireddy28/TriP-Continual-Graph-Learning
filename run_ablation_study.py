@@ -101,7 +101,11 @@ def run_single_ablation(cfg, dataset_name, seed, use_topo, use_wass, max_tasks,
         weight_decay=float(cfg["continual"]["weight_decay"])
     )
     results = trainer.train_continual(x, edge_index, y)
-    return results["average_accuracy"], results["average_forgetting"]
+    aa, af = results["average_accuracy"], results["average_forgetting"]
+    del model, trainer, pretrainer, x, edge_index, y, data_dict, manager
+    if torch.cuda.is_available():
+        torch.cuda.empty_cache()
+    return aa, af
 
 def evaluate_dataset_ablations(dataset_key, seeds, max_tasks, pretrain_epochs, continual_epochs, device, save_dir):
     """Evaluates the 4 architectural ablation variants on a given dataset."""

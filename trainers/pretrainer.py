@@ -1,5 +1,6 @@
 import torch
 import torch.nn.functional as F
+from models.backbone import clear_adj_cache
 
 def random_edge_dropout(edge_index, p=0.2):
     """Independently drops edges with probability p."""
@@ -77,4 +78,8 @@ class SelfSupervisedPretrainer:
 
         # Permanently freeze backbone parameters
         self.model.freeze_backbone()
+        del optimizer
+        clear_adj_cache()
+        if torch.cuda.is_available():
+            torch.cuda.empty_cache()
         print("[Pre-training] Completed successfully.")
