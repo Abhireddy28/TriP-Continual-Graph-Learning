@@ -80,39 +80,61 @@ class CGLBDatasetManager:
             y = data.y.squeeze().long()
         elif self.dataset_name.lower() == "reddit":
             raw_dir = os.path.join(self.data_dir, "Reddit", "raw")
-            reddit_npz = os.path.join(raw_dir, "reddit.npz")
-            zip_path = os.path.join(raw_dir, "reddit.zip")
+            os.makedirs(raw_dir, exist_ok=True)
+            data_file = os.path.join(raw_dir, "reddit_data.npz")
+            graph_file = os.path.join(raw_dir, "reddit_graph.npz")
 
-            # Clean any corrupt download (< 1 MB)
-            if os.path.exists(zip_path) and os.path.getsize(zip_path) < 1000000:
-                os.remove(zip_path)
-            if os.path.exists(reddit_npz) and os.path.getsize(reddit_npz) < 1000000:
-                os.remove(reddit_npz)
+            # Remove any corrupt placeholder (< 1 MB)
+            for fpath in [data_file, graph_file]:
+                if os.path.exists(fpath) and os.path.getsize(fpath) < 1000000:
+                    os.remove(fpath)
 
-            if not os.path.exists(reddit_npz):
-                os.makedirs(raw_dir, exist_ok=True)
-                print("[Dataset] Fetching Reddit dataset via high-speed mirror...")
-                import zipfile
+            if not os.path.exists(data_file):
+                print("[Dataset] Fetching Reddit features (reddit_data.npz) via Google Drive...")
+                os.system(f"gdown --id 19SphVl_Oe8SJ1r87Hr5a6znx3nJu1F2J -O '{data_file}' --fuzzy")
 
-                # 1. Try Google Drive mirror via gdown
-                ret = os.system(f"gdown --id 19SphVl_Oe8SJ1r87Hr5a6znx3nJu1F2J -O '{reddit_npz}' --fuzzy")
-                
-                # 2. If not, fallback to plain HTTP DGL mirror (bypasses HTTPS port 443 handshake drops)
-                if not os.path.exists(reddit_npz) or os.path.getsize(reddit_npz) < 1000000:
-                    print("[Dataset] Falling back to plain HTTP DGL mirror...")
-                    os.system(f"curl -L -A 'Mozilla/5.0' 'http://data.dgl.ai/dataset/reddit.zip' -o '{zip_path}'")
-                    if os.path.exists(zip_path) and os.path.getsize(zip_path) > 1000000:
-                        with zipfile.ZipFile(zip_path, 'r') as z:
-                            z.extractall(raw_dir)
-                        if os.path.exists(zip_path):
-                            os.remove(zip_path)
+            if not os.path.exists(graph_file):
+                print("[Dataset] Fetching Reddit adjacency (reddit_graph.npz) via Google Drive...")
+                os.system(f"gdown --id 174vb0Ws7Vxk_QTUtxqTgDHSQ4El4qDHt -O '{graph_file}' --fuzzy")
 
-            from torch_geometric.datasets import Reddit
-            dataset = Reddit(root=os.path.join(self.data_dir, "Reddit"))
-            data = dataset[0]
-            x = data.x.float()
-            edge_index = data.edge_index.long()
-            y = data.y.squeeze().long()
+            # Direct robust loading of numpy / scipy arrays (bypasses PyG download_url & DGL SSL issues)
+            import scipy.sparse as sp
+            np_data = np.load(data_file)
+
+            # Find feature matrix
+            x = None
+            for f_key in ['feature', 'feats', 'features']:
+                if f_key in np_data:
+                    x = torch.from_numpy(np_data[f_key]).float()
+                    break
+            if x is None:
+                x = torch.from_numpy(np_data[np_data.files[0]]).float()
+
+            # Find labels
+            y = None
+            for y_key in ['label', 'labels', 'y']:
+                if y_key in np_data:
+                    y = torch.from_numpy(np_data[y_key]).squeeze().long()
+                    break
+            if y is None:
+                y = torch.from_numpy(np_data[np_data.files[1]]).squeeze().long()
+
+            # Load graph adjacency
+            try:
+                adj = sp.load_npz(graph_file)
+                coo = adj.tocoo()
+                row = torch.from_numpy(coo.row).long()
+                col = torch.from_numpy(coo.col).long()
+                edge_index = torch.stack([row, col], dim=0)
+            except Exception:
+                adj_dict = np.load(graph_file, allow_pickle=True)
+                if 'adj' in adj_dict:
+                    adj = adj_dict['adj'].item().tocoo()
+                    row = torch.from_numpy(adj.row).long()
+                    col = torch.from_numpy(adj.col).long()
+                    edge_index = torch.stack([row, col], dim=0)
+                else:
+                    raise RuntimeError("Failed to parse Reddit adjacency graph.")
         elif self.dataset_name.lower() in ["products", "ogbn-products"]:
             from ogb.nodeproppred import PygNodePropPredDataset
             dataset = PygNodePropPredDataset(name="ogbn-products", root=self.data_dir)
