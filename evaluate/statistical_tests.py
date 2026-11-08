@@ -158,7 +158,7 @@ def plot_multi_dataset_ablation(multi_ablation_results, save_path="results/ablat
 # ==============================================================================
 
 def plot_statistical_significance_test(base_scores, proposed_scores, dataset_name="CoraFull",
-                                       proposed_name="Dual-TriP (Our Proposed)",
+                                       proposed_name="Dual-TriP",
                                        save_path="results/significance/statistical_significance.png"):
     """
     Plots a dedicated, publication-grade Error-Bar chart comparing Base Paper vs. Proposed Method,
@@ -169,7 +169,7 @@ def plot_statistical_significance_test(base_scores, proposed_scores, dataset_nam
 
     means = [stats_res["mean_a"], stats_res["mean_b"]]
     stds = [stats_res["std_a"], stats_res["std_b"]]
-    labels = ["Base TriP\n(Original Paper)", f"{proposed_name}\n(Our Method)"]
+    labels = ["Base TriP\n(Original Paper)", f"{proposed_name}\n(Proposed Method)"]
     colors = ['#2980b9', '#27ae60']
 
     plt.figure(figsize=(7, 5.5))

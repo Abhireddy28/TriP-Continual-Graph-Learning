@@ -31,6 +31,8 @@ def parse_args():
     parser = argparse.ArgumentParser(description="Dedicated Statistical Significance Testing: Proposed Method vs. Base Paper")
     parser.add_argument("--dataset", type=str, default="corafull",
                         help="Dataset name ('corafull', 'arxiv', 'reddit', 'products', or 'all')")
+    parser.add_argument("--variant", type=str, default="dual", choices=["dual", "wasserstein", "topo"],
+                        help="Proposed method variant to test: 'dual' (Full Dual-TriP), 'wasserstein' (Wasserstein Router), or 'topo' (Topo Prompt)")
     parser.add_argument("--seeds", type=int, nargs="+", default=[42, 123, 456],
                         help="Random seeds for statistical evaluation (default: 42 123 456)")
     parser.add_argument("--max_tasks", type=int, default=5,
@@ -104,15 +106,28 @@ def run_single_model(cfg, dataset_name, seed, use_topo, use_wass, max_tasks,
     results = trainer.train_continual(x, edge_index, y)
     return results["average_accuracy"], results["average_forgetting"]
 
-def evaluate_dataset_significance(dataset_key, seeds, max_tasks, pretrain_epochs, continual_epochs, device, save_dir):
+def evaluate_dataset_significance(dataset_key, variant, seeds, max_tasks, pretrain_epochs, continual_epochs, device, save_dir):
     """Runs statistical significance testing comparing Base Paper vs. Proposed Method on a dataset."""
     cfg_path = DATASET_CONFIG_MAP[dataset_key.lower()]
     with open(cfg_path, "r") as f:
         cfg = yaml.safe_load(f)
 
     dataset_name = cfg["dataset"]["name"]
+
+    # Determine proposed flags and clean name based on variant
+    if variant.lower() == "wasserstein":
+        use_topo, use_wass = False, True
+        proposed_name = "TriP + Wasserstein Router"
+    elif variant.lower() == "topo":
+        use_topo, use_wass = True, False
+        proposed_name = "TriP + Topo Prompt"
+    else:
+        use_topo, use_wass = True, True
+        proposed_name = "Dual-TriP (Full Method)"
+
     print("\n" + "=" * 80)
     print(f"  STATISTICAL SIGNIFICANCE TEST: {dataset_name.upper()} ({cfg['model']['backbone']} Backbone)")
+    print(f"  Comparing: [Base TriP (Paper)] vs. [{proposed_name}]")
     print(f"  Seeds: {seeds} | Max Tasks: {max_tasks} | Device: {device}")
     print("=" * 80)
 
@@ -136,8 +151,8 @@ def evaluate_dataset_significance(dataset_key, seeds, max_tasks, pretrain_epochs
         base_af_list.append(af)
         print(f"      Result: AA = {aa:.2f}%, AF = {af:.2f}%")
 
-    # 2. Proposed Method (Dual-TriP: Topo=True, Wass=True)
-    print("\n>>> Evaluating [Our Proposed Dual-TriP] across seeds...")
+    # 2. Proposed Method across seeds
+    print(f"\n>>> Evaluating [{proposed_name}] across seeds...")
     prop_aa_list, prop_af_list = [], []
     for seed in seeds:
         print(f"  --> Seed {seed}...")
@@ -145,8 +160,8 @@ def evaluate_dataset_significance(dataset_key, seeds, max_tasks, pretrain_epochs
             cfg=cfg,
             dataset_name=dataset_name,
             seed=seed,
-            use_topo=True,
-            use_wass=True,
+            use_topo=use_topo,
+            use_wass=use_wass,
             max_tasks=max_tasks,
             pretrain_epochs=pretrain_epochs,
             continual_epochs=continual_epochs,
@@ -174,7 +189,7 @@ def evaluate_dataset_significance(dataset_key, seeds, max_tasks, pretrain_epochs
         base_scores=base_aa_list,
         proposed_scores=prop_aa_list,
         dataset_name=dataset_name,
-        proposed_name="Dual-TriP (Our Method)",
+        proposed_name=proposed_name,
         save_path=save_fig
     )
 
@@ -202,6 +217,7 @@ def main():
     for d_key in target_datasets:
         d_name, res = evaluate_dataset_significance(
             dataset_key=d_key,
+            variant=args.variant,
             seeds=args.seeds,
             max_tasks=args.max_tasks,
             pretrain_epochs=args.pretrain_epochs,
@@ -229,3 +245,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+
