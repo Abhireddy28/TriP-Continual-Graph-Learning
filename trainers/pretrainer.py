@@ -45,21 +45,28 @@ class SelfSupervisedPretrainer:
         for epoch in range(1, self.epochs + 1):
             optimizer.zero_grad()
 
+            # Mini-batch subsampling for contrastive InfoNCE if pretrain nodes > 4096 (e.g. Arxiv/Reddit)
+            if len(pretrain_nodes) > 4096:
+                perm = torch.randperm(len(pretrain_nodes), device=x.device)[:4096]
+                batch_nodes = pretrain_nodes[perm]
+            else:
+                batch_nodes = pretrain_nodes
+
             # View 1
             x_1 = random_feature_masking(x, self.feat_mask_p)
             edge_1 = random_edge_dropout(edge_index, self.edge_drop_p)
             h_1 = self.model.backbone(x_1, edge_1)
-            h_1 = F.normalize(h_1[pretrain_nodes], p=2, dim=-1)
+            h_1 = F.normalize(h_1[batch_nodes], p=2, dim=-1)
 
             # View 2
             x_2 = random_feature_masking(x, self.feat_mask_p)
             edge_2 = random_edge_dropout(edge_index, self.edge_drop_p)
             h_2 = self.model.backbone(x_2, edge_2)
-            h_2 = F.normalize(h_2[pretrain_nodes], p=2, dim=-1)
+            h_2 = F.normalize(h_2[batch_nodes], p=2, dim=-1)
 
             # InfoNCE contrastive loss over nodes in pretrain set
             sim_matrix = torch.matmul(h_1, h_2.t()) / self.temperature
-            labels = torch.arange(len(pretrain_nodes), device=x.device)
+            labels = torch.arange(len(batch_nodes), device=x.device)
             loss = F.cross_entropy(sim_matrix, labels)
 
             loss.backward()

@@ -33,21 +33,29 @@ def normalize_adjacency(edge_index, num_nodes, edge_weight_mod=None):
 
 def spmm(edge_index, edge_weight, x, num_nodes):
     """
-    Memory-efficient Sparse Matrix Multiplication: out = A_norm * x.
-    Uses torch.sparse.mm to avoid O(E * D) intermediate memory allocation,
-    enabling scalability to Reddit (114M edges) and Products (61M edges).
+    Edge-sparse Message Passing: out[i] = sum_{j in N(i)} edge_weight[i, j] * x[j].
+    Operates strictly in O(E * D) edge-sparse space via index_add_.
+    Never creates dense (N x N) matrices in forward or backward pass,
+    completely preventing the 106.83 GiB OOM caused by torch.sparse.mm autograd.
     """
-    try:
-        adj = torch.sparse_coo_tensor(
-            edge_index, edge_weight, (num_nodes, num_nodes),
-            dtype=x.dtype, device=x.device
-        ).coalesce()
-        return torch.sparse.mm(adj, x)
-    except Exception:
-        row, col = edge_index
+    row, col = edge_index
+    num_edges = edge_index.shape[1]
+    chunk_size = 4_000_000  # 4M edges per chunk (~400 MB peak VRAM)
+
+    if num_edges <= chunk_size:
         msg = x[col] * edge_weight.unsqueeze(-1)
         out = torch.zeros(num_nodes, x.shape[1], device=x.device, dtype=x.dtype)
         out.index_add_(0, row, msg)
+        return out
+    else:
+        out = torch.zeros(num_nodes, x.shape[1], device=x.device, dtype=x.dtype)
+        for i in range(0, num_edges, chunk_size):
+            end_idx = min(i + chunk_size, num_edges)
+            r_c = row[i:end_idx]
+            c_c = col[i:end_idx]
+            w_c = edge_weight[i:end_idx].unsqueeze(-1)
+            msg_c = x[c_c] * w_c
+            out.index_add_(0, r_c, msg_c)
         return out
 
 class GCNLayer(nn.Module):
