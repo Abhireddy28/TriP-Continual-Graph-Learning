@@ -85,7 +85,8 @@ class TopologyPrompt(nn.Module):
         self.reset_parameters()
 
     def reset_parameters(self):
-        nn.init.xavier_uniform_(self.topo_proj.weight)
+        # Zero-initialization ensures identity residual gamma = 1.0 at initialization (like LoRA/ControlNet)
+        nn.init.zeros_(self.topo_proj.weight)
 
     def forward(self, x, edge_index):
         """

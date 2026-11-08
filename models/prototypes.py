@@ -97,11 +97,15 @@ class TaskPrototypeBuffer:
         best_task_id = 0
         best_score = -float('inf')
 
+        # Adaptive Wasserstein weight: for compact features (d <= 256, e.g. Arxiv), use subtle regularizer (0.05)
+        # For high-dimensional features (d >> 256, e.g. CoraFull), use standard (0.2)
+        w_weight = 0.05 if sub_test_x.shape[-1] <= 256 else 0.2
+
         for task_id, supp in self.support_samples.items():
             cos_sim = F.cosine_similarity(m_test.unsqueeze(0), self.prototypes[task_id].unsqueeze(0)).item()
             w_dist = compute_sinkhorn_wasserstein(sub_test_x, supp, reg=0.2, max_iter=15)
             # Higher cosine similarity, lower transport distance -> maximum score
-            score = cos_sim - 0.5 * w_dist
+            score = cos_sim - w_weight * w_dist
             if score > best_score:
                 best_score = score
                 best_task_id = task_id
