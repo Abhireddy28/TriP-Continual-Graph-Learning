@@ -62,12 +62,12 @@ def run_single_experiment(cfg, dataset_name, seed, use_topo, use_wass, max_tasks
     # Pretraining
     pretrainer = SelfSupervisedPretrainer(
         model=model,
-        lr=cfg["pretrain"]["lr"],
-        epochs=35,
-        edge_drop_p=cfg["pretrain"]["edge_dropout"],
-        feat_mask_p=cfg["pretrain"]["feature_mask"],
-        temperature=cfg["model"]["temperature"],
-        weight_decay=cfg["pretrain"]["weight_decay"]
+        lr=float(cfg["pretrain"]["lr"]),
+        epochs=30,
+        edge_drop_p=float(cfg["pretrain"]["edge_dropout"]),
+        feat_mask_p=float(cfg["pretrain"]["feature_mask"]),
+        temperature=float(cfg["model"]["temperature"]),
+        weight_decay=float(cfg["pretrain"]["weight_decay"])
     )
     pretrainer.train(x, edge_index, tasks[0]["train_nodes"].to(device))
 
@@ -75,9 +75,9 @@ def run_single_experiment(cfg, dataset_name, seed, use_topo, use_wass, max_tasks
     trainer = ContinualTrainer(
         model=model,
         tasks=tasks,
-        lr=cfg["continual"]["lr"],
+        lr=float(cfg["continual"]["lr"]),
         epochs=30,
-        weight_decay=cfg["continual"]["weight_decay"]
+        weight_decay=float(cfg["continual"]["weight_decay"])
     )
     results = trainer.train_continual(x, edge_index, y)
     return results["average_accuracy"], results["average_forgetting"]

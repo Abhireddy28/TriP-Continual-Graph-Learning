@@ -24,12 +24,12 @@ class SelfSupervisedPretrainer:
     def __init__(self, model, lr=0.001, epochs=80, edge_drop_p=0.2, 
                  feat_mask_p=0.2, temperature=0.5, weight_decay=5e-4):
         self.model = model
-        self.lr = lr
-        self.epochs = epochs
-        self.edge_drop_p = edge_drop_p
-        self.feat_mask_p = feat_mask_p
-        self.temperature = temperature
-        self.weight_decay = weight_decay
+        self.lr = float(lr)
+        self.epochs = int(epochs)
+        self.edge_drop_p = float(edge_drop_p)
+        self.feat_mask_p = float(feat_mask_p)
+        self.temperature = float(temperature)
+        self.weight_decay = float(weight_decay)
 
     def train(self, x, edge_index, pretrain_nodes):
         self.model.backbone.train()

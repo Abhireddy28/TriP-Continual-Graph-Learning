@@ -12,9 +12,9 @@ class ContinualTrainer:
     def __init__(self, model, tasks, lr=0.005, epochs=60, weight_decay=5e-4):
         self.model = model
         self.tasks = tasks
-        self.lr = lr
-        self.epochs = epochs
-        self.weight_decay = weight_decay
+        self.lr = float(lr)
+        self.epochs = int(epochs)
+        self.weight_decay = float(weight_decay)
         self.num_tasks = len(tasks)
         self.accuracy_matrix = np.zeros((self.num_tasks, self.num_tasks))
 

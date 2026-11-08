@@ -20,9 +20,9 @@ pretrain:
   epochs: 30
   edge_dropout: 0.2
   feature_mask: 0.2
-  weight_decay: 5e-4
+  weight_decay: 0.0005
 
 continual:
   lr: 0.005
   epochs: 30
-  weight_decay: 5e-4
+  weight_decay: 0.0005
