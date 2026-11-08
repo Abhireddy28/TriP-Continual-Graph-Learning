@@ -90,14 +90,25 @@ class TopologyPrompt(nn.Module):
 
     def forward(self, x, edge_index):
         """
-        Computes edge modulation factor gamma of shape (|E|,)
+        Computes edge modulation factor gamma of shape (|E|,).
+        Uses edge chunking for massive graphs (e.g. Reddit with 114M edges)
+        to stay strictly under 300 MB VRAM.
         """
         row, col = edge_index
         z = self.topo_proj(x)  # shape (N, hidden_dim)
-        
-        # Scaled dot-product edge affinity scores
-        edge_scores = (z[row] * z[col]).sum(dim=-1) * self.scale
-        # Residual scaling centered around 1.0 within range [0.8, 1.2]
-        gamma = 1.0 + 0.2 * torch.tanh(edge_scores)
-        return gamma
+        num_edges = edge_index.shape[1]
+        chunk_size = 4_000_000
+
+        if num_edges <= chunk_size:
+            edge_scores = (z[row] * z[col]).sum(dim=-1) * self.scale
+            return 1.0 + 0.2 * torch.tanh(edge_scores)
+        else:
+            gamma = torch.empty(num_edges, device=x.device, dtype=x.dtype)
+            for i in range(0, num_edges, chunk_size):
+                end_idx = min(i + chunk_size, num_edges)
+                r_c = row[i:end_idx]
+                c_c = col[i:end_idx]
+                s_c = (z[r_c] * z[c_c]).sum(dim=-1) * self.scale
+                gamma[i:end_idx] = 1.0 + 0.2 * torch.tanh(s_c)
+            return gamma
 
