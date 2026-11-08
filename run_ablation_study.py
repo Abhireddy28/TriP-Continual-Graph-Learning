@@ -1,5 +1,6 @@
 import argparse
 import os
+import json
 import yaml
 import torch
 import numpy as np
@@ -127,28 +128,50 @@ def evaluate_dataset_ablations(dataset_key, seeds, max_tasks, pretrain_epochs, c
         "Dual-TriP (Full Proposed)": {"topo": True, "wass": True}
     }
 
+    ckpt_path = os.path.join(save_dir, f"{dataset_name}_ablation_ckpt.json")
+    ckpt_data = {}
+    if os.path.exists(ckpt_path):
+        try:
+            with open(ckpt_path, "r") as f:
+                ckpt_data = json.load(f)
+        except Exception:
+            pass
+
     ablation_results = {}
 
     for name, flags in variants.items():
         print(f"\n>>> Running Ablation Variant: [{name}] (Topo={flags['topo']}, Wass={flags['wass']})")
+        if name not in ckpt_data:
+            ckpt_data[name] = {"AA": {}, "AF": {}}
+
         aa_list = []
         af_list = []
         for seed in seeds:
-            print(f"  --> Seed {seed}...")
-            aa, af = run_single_ablation(
-                cfg=cfg,
-                dataset_name=dataset_name,
-                seed=seed,
-                use_topo=flags["topo"],
-                use_wass=flags["wass"],
-                max_tasks=max_tasks,
-                pretrain_epochs=pretrain_epochs,
-                continual_epochs=continual_epochs,
-                device=device
-            )
+            seed_str = str(seed)
+            if seed_str in ckpt_data[name]["AA"] and seed_str in ckpt_data[name]["AF"]:
+                aa = ckpt_data[name]["AA"][seed_str]
+                af = ckpt_data[name]["AF"][seed_str]
+                print(f"  --> Seed {seed} loaded from checkpoint: AA = {aa:.2f}%, AF = {af:.2f}%")
+            else:
+                print(f"  --> Seed {seed}...")
+                aa, af = run_single_ablation(
+                    cfg=cfg,
+                    dataset_name=dataset_name,
+                    seed=seed,
+                    use_topo=flags["topo"],
+                    use_wass=flags["wass"],
+                    max_tasks=max_tasks,
+                    pretrain_epochs=pretrain_epochs,
+                    continual_epochs=continual_epochs,
+                    device=device
+                )
+                ckpt_data[name]["AA"][seed_str] = aa
+                ckpt_data[name]["AF"][seed_str] = af
+                with open(ckpt_path, "w") as f:
+                    json.dump(ckpt_data, f, indent=2)
+                print(f"      Result: AA = {aa:.2f}%, AF = {af:.2f}% (Saved to checkpoint)")
             aa_list.append(aa)
             af_list.append(af)
-            print(f"      Result: AA = {aa:.2f}%, AF = {af:.2f}%")
 
         ablation_results[name] = {"AA": aa_list, "AF": af_list}
 

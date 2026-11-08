@@ -1,5 +1,6 @@
 import argparse
 import os
+import json
 import yaml
 import torch
 import numpy as np
@@ -135,45 +136,74 @@ def evaluate_dataset_significance(dataset_key, variant, seeds, max_tasks, pretra
     print(f"  Seeds: {seeds} | Max Tasks: {max_tasks} | Device: {device}")
     print("=" * 80)
 
+    ckpt_path = os.path.join(save_dir, f"{dataset_name}_significance_ckpt.json")
+    ckpt_data = {"base_aa": {}, "base_af": {}, "prop_aa": {}, "prop_af": {}}
+    if os.path.exists(ckpt_path):
+        try:
+            with open(ckpt_path, "r") as f:
+                ckpt_data = json.load(f)
+        except Exception:
+            pass
+
     # 1. Base Paper Model (Base TriP: Topo=False, Wass=False)
     print("\n>>> Evaluating [Base Paper (Base TriP)] across seeds...")
     base_aa_list, base_af_list = [], []
     for seed in seeds:
-        print(f"  --> Seed {seed}...")
-        aa, af = run_single_model(
-            cfg=cfg,
-            dataset_name=dataset_name,
-            seed=seed,
-            use_topo=False,
-            use_wass=False,
-            max_tasks=max_tasks,
-            pretrain_epochs=pretrain_epochs,
-            continual_epochs=continual_epochs,
-            device=device
-        )
+        seed_str = str(seed)
+        if seed_str in ckpt_data.get("base_aa", {}) and seed_str in ckpt_data.get("base_af", {}):
+            aa = ckpt_data["base_aa"][seed_str]
+            af = ckpt_data["base_af"][seed_str]
+            print(f"  --> Seed {seed} loaded from checkpoint: AA = {aa:.2f}%, AF = {af:.2f}%")
+        else:
+            print(f"  --> Seed {seed}...")
+            aa, af = run_single_model(
+                cfg=cfg,
+                dataset_name=dataset_name,
+                seed=seed,
+                use_topo=False,
+                use_wass=False,
+                max_tasks=max_tasks,
+                pretrain_epochs=pretrain_epochs,
+                continual_epochs=continual_epochs,
+                device=device
+            )
+            ckpt_data["base_aa"][seed_str] = aa
+            ckpt_data["base_af"][seed_str] = af
+            with open(ckpt_path, "w") as f:
+                json.dump(ckpt_data, f, indent=2)
+            print(f"      Result: AA = {aa:.2f}%, AF = {af:.2f}% (Saved to checkpoint)")
         base_aa_list.append(aa)
         base_af_list.append(af)
-        print(f"      Result: AA = {aa:.2f}%, AF = {af:.2f}%")
 
     # 2. Proposed Method across seeds
     print(f"\n>>> Evaluating [{proposed_name}] across seeds...")
     prop_aa_list, prop_af_list = [], []
     for seed in seeds:
-        print(f"  --> Seed {seed}...")
-        aa, af = run_single_model(
-            cfg=cfg,
-            dataset_name=dataset_name,
-            seed=seed,
-            use_topo=use_topo,
-            use_wass=use_wass,
-            max_tasks=max_tasks,
-            pretrain_epochs=pretrain_epochs,
-            continual_epochs=continual_epochs,
-            device=device
-        )
+        seed_str = str(seed)
+        if seed_str in ckpt_data.get("prop_aa", {}) and seed_str in ckpt_data.get("prop_af", {}):
+            aa = ckpt_data["prop_aa"][seed_str]
+            af = ckpt_data["prop_af"][seed_str]
+            print(f"  --> Seed {seed} loaded from checkpoint: AA = {aa:.2f}%, AF = {af:.2f}%")
+        else:
+            print(f"  --> Seed {seed}...")
+            aa, af = run_single_model(
+                cfg=cfg,
+                dataset_name=dataset_name,
+                seed=seed,
+                use_topo=use_topo,
+                use_wass=use_wass,
+                max_tasks=max_tasks,
+                pretrain_epochs=pretrain_epochs,
+                continual_epochs=continual_epochs,
+                device=device
+            )
+            ckpt_data["prop_aa"][seed_str] = aa
+            ckpt_data["prop_af"][seed_str] = af
+            with open(ckpt_path, "w") as f:
+                json.dump(ckpt_data, f, indent=2)
+            print(f"      Result: AA = {aa:.2f}%, AF = {af:.2f}% (Saved to checkpoint)")
         prop_aa_list.append(aa)
         prop_af_list.append(af)
-        print(f"      Result: AA = {aa:.2f}%, AF = {af:.2f}%")
 
     stats_res = compute_significance_test(base_aa_list, prop_aa_list)
     print("\n" + "-" * 60)
