@@ -241,3 +241,54 @@ Each cell $M_{i, j}$ records the test accuracy on Task $j$ after the model has c
 ### Q10. What GNN backbones did you use for different datasets and why?
 > **Answer:** We used a **2-layer GCN** for CoraFull and OGBN-Arxiv. For larger, denser datasets like Reddit and Amazon Products, we used a **2-layer SGC (Simplifying Graph Convolution)** to avoid memory overhead and ensure fast training.
 
+---
+
+## 15. Demarcation: Ablation Analysis vs. Statistical Significance Testing
+
+In top-tier scientific publishing (Elsevier *Neural Networks*, IEEE *T-PAMI* / *T-NNLS*), **Ablation Analysis** and **Statistical Significance Testing** serve two fundamentally distinct academic purposes and must be evaluated separately:
+
+### A. Architectural Ablation Study
+* **Purpose:** Component isolation. Proves that every proposed module actively contributes to performance gains.
+* **Script:** `run_ablation_study.py`
+* **Four Variants Evaluated:**
+  1. `Base TriP (Paper Baseline)`: Feature Prompt + Class Prompt (no Topo, no Wasserstein)
+  2. `TriP w/o Wasserstein (+Topo Prompt)`: Isolate structural prompt impact on graph connectivity
+  3. `TriP w/o Topo (+Wasserstein Router)`: Isolate optimal transport routing impact on task confusion
+  4. `Dual-TriP (Full Proposed Method)`: Unified synergy of both proposed innovations
+* **Key Visuals Generated:**
+  - `results/ablation/{dataset}_ablation_study.png`: Component delta bar chart ($\Delta = +X.XX\%$)
+  - `results/ablation/all_datasets_ablation_study.png`: Multi-dataset 4-variant grouped comparison
+  - `results/ablation/ablation_study_table.tex`: Formal LaTeX ablation table
+
+### B. Statistical Significance Testing
+* **Purpose:** Mathematical hypothesis testing. Proves that the performance improvement of our Proposed Method over the Base Paper is statistically significant and not due to random chance or lucky seed initialization.
+* **Script:** `run_statistical_significance.py`
+* **Statistical Metrics Computed:**
+  - **Paired Two-Tailed Student's $t$-test:**
+    $$t = \frac{\bar{d}}{s_d / \sqrt{n}}, \quad df = n - 1$$
+  - **$p$-value:** If $p < 0.05$ (or $p < 0.01$), we formally reject the Null Hypothesis ($H_0$), proving statistically significant superiority at $95\%$ confidence.
+  - **95% Confidence Interval ($\text{CI}_{95\%}$):** $\bar{d} \pm t_{\text{crit}} \cdot \frac{s_d}{\sqrt{n}}$
+  - **Stability Metric:** Mean $\pm$ Standard Deviation ($\mu \pm \sigma$) across seeds 42, 123, 456.
+* **Key Visuals Generated:**
+  - `results/significance/{dataset}_statistical_significance.png`: Side-by-side error-bar chart with significance bracket ($p < 0.05$*)
+  - `results/significance/all_datasets_significance.png`: Multi-dataset comparative error-bar chart
+  - `results/significance/statistical_significance_table.tex`: Publication LaTeX significance table
+
+---
+
+## 16. Multi-Dataset Benchmark Specification (The 4 Base Paper Datasets)
+
+| # | Dataset | Domain | Nodes | Edges | Classes | Tasks | Backbone | Execution Script |
+| :-: | :--- | :--- | :-: | :-: | :-: | :-: | :-: | :--- |
+| **1** | **CoraFull** | Academic Citations | 19,793 | 126,842 | 70 | 35 | 2-layer GCN | `--dataset corafull` |
+| **2** | **OGBN-Arxiv** | Stanford CS Papers | 169,343 | 1,166,243 | 40 | 20 | 2-layer GCN | `--dataset arxiv` |
+| **3** | **Reddit** | Social Discussions | 227,853 | 114,615,892 | 40 | 20 | 2-layer SGC | `--dataset reddit` |
+| **4** | **OGBN-Products** | Amazon Co-purchasing | 2,449,028 | 61,859,036 | 46 | 23 | 2-layer SGC | `--dataset products` |
+
+To run all 4 datasets in batch mode:
+```bash
+python run_ablation_study.py --dataset all --seeds 42 123 456 --max_tasks 5
+python run_statistical_significance.py --dataset all --seeds 42 123 456 --max_tasks 5
+```
+
+
