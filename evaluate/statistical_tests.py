@@ -135,3 +135,4 @@ def format_latex_statistical_table(ablation_results, baseline_key="Base TriP"):
     latex_rows.append("\\end{table}")
 
     return "\n".join(latex_rows)
+
