@@ -79,6 +79,37 @@ class CGLBDatasetManager:
             edge_index = data.edge_index.long()
             y = data.y.squeeze().long()
         elif self.dataset_name.lower() == "reddit":
+            raw_dir = os.path.join(self.data_dir, "Reddit", "raw")
+            reddit_npz = os.path.join(raw_dir, "reddit.npz")
+            if not os.path.exists(reddit_npz):
+                os.makedirs(raw_dir, exist_ok=True)
+                zip_path = os.path.join(raw_dir, "reddit.zip")
+                print("[Dataset] Pre-fetching Reddit dataset via high-speed AWS S3 mirror...")
+                mirrors = [
+                    "https://s3.us-east-2.amazonaws.com/dgl.ai/dataset/reddit.zip",
+                    "https://data.dgl.ai/dataset/reddit.zip"
+                ]
+                import zipfile
+                downloaded = False
+                for m in mirrors:
+                    try:
+                        print(f"[Dataset] Downloading from: {m}")
+                        ret = os.system(f"wget -c -q '{m}' -O '{zip_path}'")
+                        if ret != 0 or not os.path.exists(zip_path) or os.path.getsize(zip_path) < 1000000:
+                            os.system(f"curl -k -L -A 'Mozilla/5.0' '{m}' -o '{zip_path}'")
+                        if os.path.exists(zip_path) and os.path.getsize(zip_path) > 1000000:
+                            downloaded = True
+                            break
+                    except Exception as err:
+                        print(f"[Dataset] Mirror error: {err}")
+                
+                if downloaded and os.path.exists(zip_path):
+                    print("[Dataset] Extracting reddit.zip...")
+                    with zipfile.ZipFile(zip_path, 'r') as z:
+                        z.extractall(raw_dir)
+                    if os.path.exists(zip_path):
+                        os.remove(zip_path)
+
             from torch_geometric.datasets import Reddit
             dataset = Reddit(root=os.path.join(self.data_dir, "Reddit"))
             data = dataset[0]
