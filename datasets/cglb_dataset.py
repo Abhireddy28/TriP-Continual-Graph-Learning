@@ -68,30 +68,30 @@ class CGLBDatasetManager:
             from torch_geometric.datasets import CitationFull
             dataset = CitationFull(root=os.path.join(self.data_dir, "CoraFull"), name="Cora")
             data = dataset[0]
-            x = data.x
-            edge_index = data.edge_index
-            y = data.y
+            x = data.x.float()
+            edge_index = data.edge_index.long()
+            y = data.y.squeeze().long()
         elif self.dataset_name.lower() in ["arxiv", "ogbn-arxiv"]:
             from ogb.nodeproppred import PygNodePropPredDataset
             dataset = PygNodePropPredDataset(name="ogbn-arxiv", root=self.data_dir)
             data = dataset[0]
-            x = data.x
-            edge_index = data.edge_index
-            y = data.y.squeeze(-1)
+            x = data.x.float()
+            edge_index = data.edge_index.long()
+            y = data.y.squeeze().long()
         elif self.dataset_name.lower() == "reddit":
             from torch_geometric.datasets import Reddit
             dataset = Reddit(root=os.path.join(self.data_dir, "Reddit"))
             data = dataset[0]
-            x = data.x
-            edge_index = data.edge_index
-            y = data.y
+            x = data.x.float()
+            edge_index = data.edge_index.long()
+            y = data.y.squeeze().long()
         elif self.dataset_name.lower() in ["products", "ogbn-products"]:
             from ogb.nodeproppred import PygNodePropPredDataset
             dataset = PygNodePropPredDataset(name="ogbn-products", root=self.data_dir)
             data = dataset[0]
-            x = data.x
-            edge_index = data.edge_index
-            y = data.y.squeeze(-1)
+            x = data.x.float()
+            edge_index = data.edge_index.long()
+            y = data.y.squeeze().long()
         elif self.dataset_name.lower() in ["synthetic", "demo"]:
             return self._create_synthetic_graph()
         else:

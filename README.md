@@ -131,7 +131,45 @@ All datasets are downloaded and split automatically following the **Continual Gr
 
 ---
 
-## 💻 6. How to Run Locally
+## 🧪 6. Dedicated Ablation Study & Statistical Significance Suites
+
+Following academic research best practices, the framework provides **two completely separate empirical evaluation suites**:
+
+### A. Architectural Ablation Study (`run_ablation_study.py`)
+Dissects the individual component contributions of the proposed model:
+1. **Base TriP (Paper Baseline)**
+2. **TriP w/o Wasserstein (+Topo Prompt only)**
+3. **TriP w/o Topo (+Wasserstein Router only)**
+4. **Dual-TriP (Full Proposed Method)**
+
+```bash
+# Run on single dataset (e.g. CoraFull)
+python run_ablation_study.py --dataset corafull --seeds 42 123 456 --max_tasks 5
+
+# Run across all 4 datasets in the paper
+python run_ablation_study.py --dataset all --seeds 42 123 456 --max_tasks 5
+```
+*Outputs generated:* `results/ablation/{dataset}_ablation_study.png`, `results/ablation/all_datasets_ablation_study.png`, and `results/ablation/ablation_study_table.tex`.
+
+### B. Statistical Significance Testing (`run_statistical_significance.py`)
+Validates whether the performance gain of our Proposed Method over the Base Paper baseline is statistically significant ($p < 0.05$):
+- Multi-seed independent trials (Seeds 42, 123, 456)
+- Paired two-tailed Student's $t$-test ($t$-statistic, $p$-value, degrees of freedom)
+- 95% Confidence Interval of the performance difference
+- Rejection of null hypothesis ($H_0$)
+
+```bash
+# Run on single dataset (e.g. CoraFull)
+python run_statistical_significance.py --dataset corafull --seeds 42 123 456 --max_tasks 5
+
+# Run across all 4 datasets in the paper
+python run_statistical_significance.py --dataset all --seeds 42 123 456 --max_tasks 5
+```
+*Outputs generated:* `results/significance/{dataset}_statistical_significance.png`, `results/significance/all_datasets_significance.png`, and `results/significance/statistical_significance_table.tex`.
+
+---
+
+## 💻 7. How to Run Locally
 
 ```bash
 # 1. Clone repository

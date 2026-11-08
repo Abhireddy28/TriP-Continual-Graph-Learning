@@ -71,12 +71,12 @@ def main():
     pretrain_epochs = args.pretrain_epochs if args.pretrain_epochs is not None else cfg["pretrain"]["epochs"]
     pretrainer = SelfSupervisedPretrainer(
         model=model,
-        lr=cfg["pretrain"]["lr"],
-        epochs=pretrain_epochs,
-        edge_drop_p=cfg["pretrain"]["edge_dropout"],
-        feat_mask_p=cfg["pretrain"]["feature_mask"],
-        temperature=cfg["model"]["temperature"],
-        weight_decay=cfg["pretrain"]["weight_decay"]
+        lr=float(cfg["pretrain"]["lr"]),
+        epochs=int(pretrain_epochs),
+        edge_drop_p=float(cfg["pretrain"]["edge_dropout"]),
+        feat_mask_p=float(cfg["pretrain"]["feature_mask"]),
+        temperature=float(cfg["model"]["temperature"]),
+        weight_decay=float(cfg["pretrain"]["weight_decay"])
     )
     pretrainer.train(x, edge_index, tasks[0]["train_nodes"].to(device))
 
@@ -85,9 +85,9 @@ def main():
     trainer = ContinualTrainer(
         model=model,
         tasks=tasks,
-        lr=cfg["continual"]["lr"],
-        epochs=continual_epochs,
-        weight_decay=cfg["continual"]["weight_decay"]
+        lr=float(cfg["continual"]["lr"]),
+        epochs=int(continual_epochs),
+        weight_decay=float(cfg["continual"]["weight_decay"])
     )
     results = trainer.train_continual(x, edge_index, y)
 

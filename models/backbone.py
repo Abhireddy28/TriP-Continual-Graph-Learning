@@ -32,12 +32,23 @@ def normalize_adjacency(edge_index, num_nodes, edge_weight_mod=None):
     return full_edge_index, edge_weight
 
 def spmm(edge_index, edge_weight, x, num_nodes):
-    """Sparse matrix multiplication with node features x."""
-    row, col = edge_index
-    msg = x[col] * edge_weight.unsqueeze(-1)
-    out = torch.zeros(num_nodes, x.shape[1], device=x.device, dtype=x.dtype)
-    out.index_add_(0, row, msg)
-    return out
+    """
+    Memory-efficient Sparse Matrix Multiplication: out = A_norm * x.
+    Uses torch.sparse.mm to avoid O(E * D) intermediate memory allocation,
+    enabling scalability to Reddit (114M edges) and Products (61M edges).
+    """
+    try:
+        adj = torch.sparse_coo_tensor(
+            edge_index, edge_weight, (num_nodes, num_nodes),
+            dtype=x.dtype, device=x.device
+        ).coalesce()
+        return torch.sparse.mm(adj, x)
+    except Exception:
+        row, col = edge_index
+        msg = x[col] * edge_weight.unsqueeze(-1)
+        out = torch.zeros(num_nodes, x.shape[1], device=x.device, dtype=x.dtype)
+        out.index_add_(0, row, msg)
+        return out
 
 class GCNLayer(nn.Module):
     def __init__(self, in_features, out_features):
