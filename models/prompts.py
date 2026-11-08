@@ -97,7 +97,7 @@ class TopologyPrompt(nn.Module):
         row, col = edge_index
         z = self.topo_proj(x)  # shape (N, hidden_dim)
         num_edges = edge_index.shape[1]
-        chunk_size = 4_000_000
+        chunk_size = 500_000  # 500k edges per chunk (~32 MB peak VRAM)
 
         if num_edges <= chunk_size:
             edge_scores = (z[row] * z[col]).sum(dim=-1) * self.scale
