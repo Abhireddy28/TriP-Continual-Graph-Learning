@@ -43,6 +43,28 @@ class CGLBDatasetManager:
 
         print(f"[Dataset] Loading/Downloading {self.dataset_name} automatically...")
         if self.dataset_name.lower() == "corafull":
+            raw_dir = os.path.join(self.data_dir, "CoraFull", "cora", "raw")
+            cora_npz_path = os.path.join(raw_dir, "cora.npz")
+            if not os.path.exists(cora_npz_path):
+                os.makedirs(raw_dir, exist_ok=True)
+                mirrors = [
+                    "https://raw.githubusercontent.com/abojchevski/graph2gauss/master/data/cora.npz",
+                    "https://raw.githubusercontent.com/BUPT-GAMMA/CPF/master/data/npz/cora_full.npz"
+                ]
+                import urllib.request
+                downloaded = False
+                for mirror in mirrors:
+                    try:
+                        print(f"[Dataset] Fetching CoraFull from mirror: {mirror}")
+                        urllib.request.urlretrieve(mirror, cora_npz_path)
+                        downloaded = True
+                        break
+                    except Exception as err:
+                        print(f"[Dataset] Mirror failed ({err}), trying next...")
+                if not downloaded:
+                    # Fallback to local curl if available
+                    os.system(f"curl -sL https://raw.githubusercontent.com/abojchevski/graph2gauss/master/data/cora.npz -o {cora_npz_path}")
+
             from torch_geometric.datasets import CitationFull
             dataset = CitationFull(root=os.path.join(self.data_dir, "CoraFull"), name="Cora")
             data = dataset[0]
