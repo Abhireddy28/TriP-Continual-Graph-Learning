@@ -81,34 +81,31 @@ class CGLBDatasetManager:
         elif self.dataset_name.lower() == "reddit":
             raw_dir = os.path.join(self.data_dir, "Reddit", "raw")
             reddit_npz = os.path.join(raw_dir, "reddit.npz")
+            zip_path = os.path.join(raw_dir, "reddit.zip")
+
+            # Clean any corrupt download (< 1 MB)
+            if os.path.exists(zip_path) and os.path.getsize(zip_path) < 1000000:
+                os.remove(zip_path)
+            if os.path.exists(reddit_npz) and os.path.getsize(reddit_npz) < 1000000:
+                os.remove(reddit_npz)
+
             if not os.path.exists(reddit_npz):
                 os.makedirs(raw_dir, exist_ok=True)
-                zip_path = os.path.join(raw_dir, "reddit.zip")
-                print("[Dataset] Pre-fetching Reddit dataset via high-speed AWS S3 mirror...")
-                mirrors = [
-                    "https://s3.us-east-2.amazonaws.com/dgl.ai/dataset/reddit.zip",
-                    "https://data.dgl.ai/dataset/reddit.zip"
-                ]
+                print("[Dataset] Fetching Reddit dataset via high-speed mirror...")
                 import zipfile
-                downloaded = False
-                for m in mirrors:
-                    try:
-                        print(f"[Dataset] Downloading from: {m}")
-                        ret = os.system(f"wget -c -q '{m}' -O '{zip_path}'")
-                        if ret != 0 or not os.path.exists(zip_path) or os.path.getsize(zip_path) < 1000000:
-                            os.system(f"curl -k -L -A 'Mozilla/5.0' '{m}' -o '{zip_path}'")
-                        if os.path.exists(zip_path) and os.path.getsize(zip_path) > 1000000:
-                            downloaded = True
-                            break
-                    except Exception as err:
-                        print(f"[Dataset] Mirror error: {err}")
+
+                # 1. Try Google Drive mirror via gdown
+                ret = os.system(f"gdown --id 19SphVl_Oe8SJ1r87Hr5a6znx3nJu1F2J -O '{reddit_npz}' --fuzzy")
                 
-                if downloaded and os.path.exists(zip_path):
-                    print("[Dataset] Extracting reddit.zip...")
-                    with zipfile.ZipFile(zip_path, 'r') as z:
-                        z.extractall(raw_dir)
-                    if os.path.exists(zip_path):
-                        os.remove(zip_path)
+                # 2. If not, fallback to plain HTTP DGL mirror (bypasses HTTPS port 443 handshake drops)
+                if not os.path.exists(reddit_npz) or os.path.getsize(reddit_npz) < 1000000:
+                    print("[Dataset] Falling back to plain HTTP DGL mirror...")
+                    os.system(f"curl -L -A 'Mozilla/5.0' 'http://data.dgl.ai/dataset/reddit.zip' -o '{zip_path}'")
+                    if os.path.exists(zip_path) and os.path.getsize(zip_path) > 1000000:
+                        with zipfile.ZipFile(zip_path, 'r') as z:
+                            z.extractall(raw_dir)
+                        if os.path.exists(zip_path):
+                            os.remove(zip_path)
 
             from torch_geometric.datasets import Reddit
             dataset = Reddit(root=os.path.join(self.data_dir, "Reddit"))
