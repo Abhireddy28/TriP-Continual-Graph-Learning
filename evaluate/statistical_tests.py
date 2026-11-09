@@ -317,17 +317,17 @@ def format_latex_ablation_table(multi_ablation_results):
     latex.append("\\end{table*}")
     return "\n".join(latex)
 
-def format_latex_significance_table(multi_significance_results):
+def format_latex_significance_table(multi_significance_results, proposed_name="Proposed Method"):
     """
     Formats a formal publication LaTeX table for the Statistical Significance testing.
     """
     latex = []
     latex.append("\\begin{table*}[t]")
     latex.append("\\centering")
-    latex.append("\\caption{Statistical Significance Test: Proposed Method vs. Base TriP Baseline ($p < 0.05$).}")
+    latex.append(f"\\caption{{Statistical Significance Test: {proposed_name} vs. Base TriP Baseline ($p < 0.05$).}}")
     latex.append("\\begin{tabular}{lccccccc}")
     latex.append("\\hline")
-    latex.append("\\textbf{Dataset} & \\textbf{Base Paper (AA)} & \\textbf{Proposed (AA)} & \\textbf{Gain ($\\Delta$)} & \\textbf{$t$-stat} & \\textbf{$p$-value} & \\textbf{Significance} & \\textbf{95\\% CI} \\\\")
+    latex.append(f"\\textbf{{Dataset}} & \\textbf{{Base Paper (AA)}} & \\textbf{{{proposed_name} (AA)}} & \\textbf{{Gain ($\\Delta$)}} & \\textbf{{$t$-stat}} & \\textbf{{$p$-value}} & \\textbf{{Significance}} & \\textbf{{95\\% CI}} \\\\")
     latex.append("\\hline")
 
     for d, data in multi_significance_results.items():
