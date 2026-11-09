@@ -76,12 +76,13 @@ class TriPFramework(nn.Module):
         tp = self.topology_prompts[str_id] if self.use_topology_prompt else None
         return fp, cp, tp
 
-    def encode(self, x, edge_index, task_id):
+    def encode(self, x, edge_index, task_id, node_indices=None):
         """
         Calculates Dual-Space prompted representations:
           X_hat = x + p_fea
           A_hat = A * gamma_topo
           h_tilde_v = f_theta(X_hat, A_hat) * q_t^cls
+        Optionally computes only for node_indices to save gigabytes of VRAM.
         """
         str_id = str(task_id)
         fp = self.feature_prompts[str_id]
@@ -97,7 +98,7 @@ class TriPFramework(nn.Module):
             edge_mod = None
 
         # 3. Frozen GNN encoding with dual-space prompts
-        h = self.backbone(x_prompted, edge_index, edge_weight_mod=edge_mod)
+        h = self.backbone(x_prompted, edge_index, edge_weight_mod=edge_mod, node_indices=node_indices)
 
         # 4. Class Prompt feature-wise gating
         h_tilde = cp(h)
@@ -110,8 +111,12 @@ class TriPFramework(nn.Module):
         Unified Prompt Template Loss (Section 4.5, Eq. 9-14):
           L_v = -log (s_v^+ / (s_v^+ + s_v^{-,curr})) - alpha * log (s_v^+ / (s_v^+ + s_v^{-,pre}))
         """
-        train_h = h_tilde[train_nodes]
-        train_y = y[train_nodes]
+        if h_tilde.shape[0] == len(train_nodes):
+            train_h = h_tilde
+            train_y = y[train_nodes] if y.shape[0] != len(train_nodes) else y
+        else:
+            train_h = h_tilde[train_nodes]
+            train_y = y[train_nodes]
 
         # Current task class prototypes: shape (len(current_classes), D)
         curr_protos = [self.class_prototype_buffer.class_prototypes[c] for c in current_classes]
@@ -162,9 +167,8 @@ class TriPFramework(nn.Module):
             # 1. Query most relevant task prompt
             t_star = self.task_prototype_buffer.query_task(test_x)
 
-            # 2. Extract prompted node embeddings using task t* prompts
-            h_tilde = self.encode(x, edge_index, t_star)
-            test_h = h_tilde[test_nodes]
+            # 2. Extract prompted node embeddings using task t* prompts ONLY for test_nodes
+            test_h = self.encode(x, edge_index, t_star, node_indices=test_nodes)
 
             # 3. Classify against all observed class prototypes
             all_protos = self.class_prototype_buffer.get_all_prototypes_matrix(observed_classes).to(self.device)

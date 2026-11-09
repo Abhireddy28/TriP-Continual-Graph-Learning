@@ -48,7 +48,7 @@ class ContinualTrainer:
 
             # Initial prototype computation before training
             with torch.no_grad():
-                h_tilde_init = self.model.encode(x, edge_index, t)
+                h_tilde_init = self.model.encode(x, edge_index, t, node_indices=train_nodes)
                 self.model.class_prototype_buffer.update_prototypes(
                     h_tilde_init, y, train_nodes, current_classes
                 )
@@ -58,8 +58,8 @@ class ContinualTrainer:
             for epoch in range(1, self.epochs + 1):
                 optimizer.zero_grad()
 
-                # Forward pass through prompted GNN
-                h_tilde = self.model.encode(x, edge_index, t)
+                # Forward pass through prompted GNN efficiently indexed on train_nodes
+                h_tilde = self.model.encode(x, edge_index, t, node_indices=train_nodes)
 
                 # Recompute current class prototypes at each epoch (Section 4.4.2)
                 self.model.class_prototype_buffer.update_prototypes(

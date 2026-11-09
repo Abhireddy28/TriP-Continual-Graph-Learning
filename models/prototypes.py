@@ -123,9 +123,14 @@ class ClassPrototypeBuffer:
     def update_prototypes(self, h_tilde, y, train_nodes, current_classes):
         """
         Updates prototypes for classes in the current task.
+        Supports both full-graph representations and indexed sub-representations.
         """
-        train_h = h_tilde[train_nodes]
-        train_y = y[train_nodes]
+        if h_tilde.shape[0] == len(train_nodes):
+            train_h = h_tilde
+            train_y = y[train_nodes] if y.shape[0] != len(train_nodes) else y
+        else:
+            train_h = h_tilde[train_nodes]
+            train_y = y[train_nodes]
 
         for c in current_classes:
             idx = (train_y == c).nonzero(as_tuple=True)[0]

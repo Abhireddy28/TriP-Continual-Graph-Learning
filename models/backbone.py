@@ -158,7 +158,7 @@ class GCNBackbone(nn.Module):
         self.conv2 = GCNLayer(hidden_dim, hidden_dim)
         self.dropout = dropout
 
-    def forward(self, x, edge_index, edge_weight_mod=None):
+    def forward(self, x, edge_index, edge_weight_mod=None, node_indices=None):
         num_nodes = x.shape[0]
         norm_edge_index, edge_weight = normalize_adjacency(edge_index, num_nodes, edge_weight_mod=edge_weight_mod)
         
@@ -167,6 +167,8 @@ class GCNBackbone(nn.Module):
         h = F.dropout(h, p=self.dropout, training=self.training)
         
         h = self.conv2(h, norm_edge_index, edge_weight, num_nodes)
+        if node_indices is not None:
+            h = h[node_indices]
         return h
 
 class SGCBackbone(nn.Module):
@@ -183,12 +185,16 @@ class SGCBackbone(nn.Module):
     def reset_parameters(self):
         nn.init.xavier_uniform_(self.linear.weight)
 
-    def forward(self, x, edge_index, edge_weight_mod=None):
+    def forward(self, x, edge_index, edge_weight_mod=None, node_indices=None):
         num_nodes = x.shape[0]
         norm_edge_index, edge_weight = normalize_adjacency(edge_index, num_nodes, edge_weight_mod=edge_weight_mod)
         
         h = x
         for _ in range(self.k_hops):
             h = spmm(norm_edge_index, edge_weight, h, num_nodes)
+            
+        if node_indices is not None:
+            h = h[node_indices]
+            
         out = self.linear(h)
         return out
