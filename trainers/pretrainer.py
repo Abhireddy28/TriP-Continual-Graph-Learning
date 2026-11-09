@@ -21,6 +21,12 @@ class SelfSupervisedPretrainer:
     Performs Self-Supervised Contrastive Pre-training on Task 1 (Section 4.2).
     Uses Edge Dropout and Feature Masking to produce two views G_1^(1) and G_1^(2).
     Trained with InfoNCE loss without task label leakage, then freezes the GNN.
+    
+    Memory Optimization for Massive Graphs:
+    - Bypasses edge duplication on graphs with > 20M edges (e.g. Products with 124M edges)
+      to prevent multiple gigabytes of redundant graph allocations.
+    - Explicitly deletes View 1 intermediate tensors before computing View 2 to avoid
+      peak VRAM accumulation.
     """
     def __init__(self, model, lr=0.001, epochs=80, edge_drop_p=0.2, 
                  feat_mask_p=0.2, temperature=0.5, weight_decay=5e-4):
@@ -40,13 +46,16 @@ class SelfSupervisedPretrainer:
             weight_decay=self.weight_decay
         )
 
+        num_edges = edge_index.shape[1]
+        use_edge_dropout = (self.edge_drop_p > 0.0) and (num_edges < 20_000_000)
+
         print(f"[Pre-training] Starting self-supervised pre-training on Task 1 "
               f"({len(pretrain_nodes)} nodes, {self.epochs} epochs)...")
 
         for epoch in range(1, self.epochs + 1):
             optimizer.zero_grad()
 
-            # Mini-batch subsampling for contrastive InfoNCE if pretrain nodes > 4096 (e.g. Arxiv/Reddit)
+            # Mini-batch subsampling for contrastive InfoNCE if pretrain nodes > 4096 (e.g. Arxiv/Reddit/Products)
             if len(pretrain_nodes) > 4096:
                 perm = torch.randperm(len(pretrain_nodes), device=x.device)[:4096]
                 batch_nodes = pretrain_nodes[perm]
@@ -55,23 +64,35 @@ class SelfSupervisedPretrainer:
 
             # View 1
             x_1 = random_feature_masking(x, self.feat_mask_p)
-            edge_1 = random_edge_dropout(edge_index, self.edge_drop_p)
-            h_1 = self.model.backbone(x_1, edge_1)
-            h_1 = F.normalize(h_1[batch_nodes], p=2, dim=-1)
+            edge_1 = random_edge_dropout(edge_index, self.edge_drop_p) if use_edge_dropout else edge_index
+            h_1_full = self.model.backbone(x_1, edge_1)
+            h_1 = F.normalize(h_1_full[batch_nodes], p=2, dim=-1)
+            
+            # Immediately release View 1 memory before allocating View 2
+            del x_1, h_1_full
+            if edge_1 is not edge_index:
+                del edge_1
 
             # View 2
             x_2 = random_feature_masking(x, self.feat_mask_p)
-            edge_2 = random_edge_dropout(edge_index, self.edge_drop_p)
-            h_2 = self.model.backbone(x_2, edge_2)
-            h_2 = F.normalize(h_2[batch_nodes], p=2, dim=-1)
+            edge_2 = random_edge_dropout(edge_index, self.edge_drop_p) if use_edge_dropout else edge_index
+            h_2_full = self.model.backbone(x_2, edge_2)
+            h_2 = F.normalize(h_2_full[batch_nodes], p=2, dim=-1)
+            
+            # Immediately release View 2 memory
+            del x_2, h_2_full
+            if edge_2 is not edge_index:
+                del edge_2
 
-            # InfoNCE contrastive loss over nodes in pretrain set
+            # InfoNCE contrastive loss over sampled nodes
             sim_matrix = torch.matmul(h_1, h_2.t()) / self.temperature
             labels = torch.arange(len(batch_nodes), device=x.device)
             loss = F.cross_entropy(sim_matrix, labels)
 
             loss.backward()
             optimizer.step()
+
+            del sim_matrix, labels
 
             if epoch % 20 == 0 or epoch == self.epochs:
                 print(f"  [Epoch {epoch:03d}/{self.epochs:03d}] Pre-train InfoNCE Loss: {loss.item():.4f}")

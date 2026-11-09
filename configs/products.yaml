@@ -18,7 +18,7 @@ model:
 pretrain:
   lr: 0.001
   epochs: 30
-  edge_dropout: 0.2
+  edge_dropout: 0.0
   feature_mask: 0.2
   weight_decay: 0.0005
 
