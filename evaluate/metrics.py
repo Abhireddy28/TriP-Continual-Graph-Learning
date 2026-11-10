@@ -1,7 +1,10 @@
 import os
 import numpy as np
 import matplotlib.pyplot as plt
-import seaborn as sns
+try:
+    import seaborn as sns
+except ImportError:
+    sns = None
 
 def compute_metrics(accuracy_matrix):
     """
@@ -35,16 +38,20 @@ def plot_performance_matrix(accuracy_matrix, dataset_name="Dataset", save_path="
             mask[i, j] = True
 
     plt.figure(figsize=(8, 6))
-    sns.heatmap(
-        accuracy_matrix,
-        mask=mask,
-        annot=(T <= 10),
-        fmt=".1f",
-        cmap="viridis",
-        cbar_kws={'label': 'Accuracy (%)'},
-        xticklabels=range(1, T + 1),
-        yticklabels=range(1, T + 1)
-    )
+    if sns is not None:
+        sns.heatmap(
+            accuracy_matrix,
+            mask=mask,
+            annot=(T <= 10),
+            fmt=".1f",
+            cmap="viridis",
+            cbar_kws={'label': 'Accuracy (%)'},
+            xticklabels=range(1, T + 1),
+            yticklabels=range(1, T + 1)
+        )
+    else:
+        plt.imshow(accuracy_matrix, cmap="viridis")
+        plt.colorbar(label='Accuracy (%)')
     plt.title(f"TriP Performance Matrix - {dataset_name}\n(Row: Trained Task, Col: Evaluated Task)")
     plt.xlabel("Evaluated Task $j$")
     plt.ylabel("Trained Task $i$")
