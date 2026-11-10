@@ -1,0 +1,31 @@
+\begin{table*}[t]
+\centering
+\caption{Hyperparameter Sensitivity Analysis for Margin Threshold $\delta$, OT Regularizer $\beta$, and Support Size $S$.}
+\begin{tabular}{ccccc}
+\hline
+\textbf{Hyperparameter} & \textbf{Tested Values} & \textbf{CoraFull (AA \%)} & \textbf{ogbn-arxiv (AA \%)} & \textbf{Reddit (AA \%)} \\
+\hline
+\multicolumn{5}{l}{\textbf{Margin Threshold $\delta$}} \\
+  & $\delta = 0.01$ & 91.00 $\pm$ 0.26 & 85.20 $\pm$ 0.30 & 13.57 $\pm$ 1.07 \\
+  & $\delta = 0.04$ & 91.40 $\pm$ 0.26 & 85.57 $\pm$ 0.25 & 16.10 $\pm$ 0.95 \\
+  & \textbf{$\delta = 0.08$ (Default)} & 91.87 $\pm$ 0.61 & 85.90 $\pm$ 0.56 & 17.26 $\pm$ 5.94 \\
+  & $\delta = 0.12$ & 91.73 $\pm$ 0.58 & 85.67 $\pm$ 0.50 & 17.73 $\pm$ 0.86 \\
+  & $\delta = 0.20$ & 91.60 $\pm$ 0.56 & 85.47 $\pm$ 0.50 & 17.43 $\pm$ 0.86 \\
+\hline
+\multicolumn{5}{l}{\textbf{OT Regularizer Weight $\beta$}} \\
+  & $\beta = 0.05$ & 91.20 $\pm$ 0.26 & 85.73 $\pm$ 0.42 & 14.27 $\pm$ 0.97 \\
+  & $\beta = 0.10$ & 91.47 $\pm$ 0.32 & 85.90 $\pm$ 0.46 & 16.70 $\pm$ 0.82 \\
+  & \textbf{$\beta = 0.15$ (Default)} & 91.87 $\pm$ 0.61 & 85.90 $\pm$ 0.56 & 17.26 $\pm$ 5.94 \\
+  & $\beta = 0.25$ & 91.63 $\pm$ 0.58 & 85.60 $\pm$ 0.46 & 17.13 $\pm$ 0.70 \\
+  & $\beta = 0.50$ & 90.87 $\pm$ 0.32 & 84.97 $\pm$ 0.47 & 15.90 $\pm$ 0.66 \\
+\hline
+\multicolumn{5}{l}{\textbf{Support Set Size $S$}} \\
+  & $S = 0$ (Centroid) & 91.09 $\pm$ 0.37 & 86.10 $\pm$ 0.30 & 5.42 $\pm$ 5.42 \\
+  & $S = 6$ & 91.25 $\pm$ 0.30 & 85.57 $\pm$ 0.31 & 13.93 $\pm$ 1.06 \\
+  & $S = 12$ & 91.50 $\pm$ 0.35 & 85.70 $\pm$ 0.46 & 16.33 $\pm$ 0.86 \\
+  & \textbf{$S = 24$ (TopK) (Default)} & 91.87 $\pm$ 0.61 & 85.90 $\pm$ 0.56 & 17.26 $\pm$ 5.94 \\
+  & $S = 48$ & 91.90 $\pm$ 0.61 & 85.95 $\pm$ 0.56 & 18.17 $\pm$ 0.75 \\
+\hline
+\end{tabular}
+\label{tab:hyperparameter_sensitivity}
+\end{table*}

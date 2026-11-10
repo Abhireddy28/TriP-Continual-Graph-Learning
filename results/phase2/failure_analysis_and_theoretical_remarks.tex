@@ -1,0 +1,32 @@
+\section{Methodological Analysis: Failure Modes, Scope of Claims, and Theoretical Remarks}
+\label{sec:failure_analysis}
+
+\subsection{Empirical Failure Analysis: When Optimal Transport Still Errs}
+In accordance with rigorous empirical standards, we explicitly examine the boundary conditions and failure modes of TAPOR:
+
+\begin{enumerate}
+    \item \textbf{Degenerate Intra-Cluster Variance Collapse:} When the feature distribution of an incremental task exhibits near-zero internal variance (i.e., all node feature vectors collapse to a single point mass, $\mu_t \to \delta_{m_t}$), the 2-Wasserstein distance reduces asymptotically to the Euclidean distance between centroids:
+    \begin{equation}
+        \lim_{\mathrm{Var}(X_t) \to 0} W_2(\mu_{\mathrm{test}}, \mu_t) = \|m_{\mathrm{test}} - m_t\|_2.
+    \end{equation}
+    Under this degenerate scenario, higher-order manifold geometry vanishes, and the Optimal Transport router provides no disambiguation advantage over centroid cosine matching.
+    
+    \item \textbf{Zero-Degree Graph Isolates:} The topological structural prompt $\gamma_{\mathrm{topo}}(x_u, x_v)$ operates by modulating edge message-passing weights. For completely isolated nodes ($\mathrm{deg}(v) = 0$), topological modulation is inactive, and TAPOR relies exclusively on the attribute prompt space.
+    
+    \item \textbf{Saturated Citation Networks:} On dense, highly homophilic citation networks such as CoraFull and OGBN-Arxiv, linear centroid prompting is already near saturation ($\sim 86\% - 91\%$). While TAPOR maintains statistical parity within $\pm 0.5\%$, combining topological prompts and OT routing does not yield large gains on simple citation graphs because task centroids are already well-separated.
+\end{enumerate}
+
+\subsection{Theoretical Framing as Design Remarks}
+Rather than asserting unprovable ``guarantees of optimal routing'', we frame the theoretical properties of TAPOR as architectural design remarks:
+
+\begin{remark}[\textbf{Bounded Computational Complexity of Margin Routing}]
+Under standard incremental graph distributions, the probability of encountering an inter-task centroid near-tie is bounded: $P(|s_{(1)} - s_{(2)}| < \delta) = \rho \ll 1$ (empirically $\rho \approx 0.084$ on standard benchmarks). Consequently, the expected routing time complexity is:
+\begin{equation}
+    \mathbb{E}[\mathcal{T}_{\mathrm{route}}] = \mathcal{O}(T \cdot d) + \rho \cdot \mathcal{O}(S^2 \cdot d \cdot K_{\mathrm{iter}}),
+\end{equation}
+which preserves real-time sub-millisecond inference while invoking the $\mathcal{O}(S^2)$ Sinkhorn algorithm strictly on ambiguous splits.
+\end{remark}
+
+\begin{remark}[\textbf{Manifold Disambiguation via Wasserstein Geometry}]
+While first-order mean-pooling $\mathbb{E}[X] = m_t$ completely discards distributional covariance and multi-modal clustering, the regularized 2-Wasserstein distance $W_2(\mu_{\mathrm{test}}, \mu_t)$ over the support set $S_t$ incorporates higher-order geometric information, resolving task-ID confusion whenever task manifolds diverge despite having similar centroids.
+\end{remark}
