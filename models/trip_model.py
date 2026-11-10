@@ -21,14 +21,18 @@ class TriPFramework(nn.Module):
     """
     def __init__(self, in_features, hidden_dim=256, backbone_type="GCN", 
                  prompt_k=2, temperature=0.5, alpha=0.4, 
-                 use_topology_prompt=True, use_wasserstein=True, device="cpu"):
+                 use_feature_prompt=True, use_topology_prompt=True, use_class_prompt=True,
+                 use_wasserstein=True, margin_threshold=0.08, ot_weight=0.15, 
+                 support_mode="topk_l2", num_support_nodes=24, device="cpu"):
         super(TriPFramework, self).__init__()
         self.in_features = in_features
         self.hidden_dim = hidden_dim
         self.temperature = temperature
         self.alpha = alpha
         self.prompt_k = prompt_k
+        self.use_feature_prompt = use_feature_prompt
         self.use_topology_prompt = use_topology_prompt
+        self.use_class_prompt = use_class_prompt
         self.use_wasserstein = use_wasserstein
         self.device = device
 
@@ -41,13 +45,21 @@ class TriPFramework(nn.Module):
             raise ValueError(f"Unknown backbone: {backbone_type}")
 
         # 2. Prompts storage per task
-        self.feature_prompts = nn.ModuleDict()
-        self.class_prompts = nn.ModuleDict()
+        if self.use_feature_prompt:
+            self.feature_prompts = nn.ModuleDict()
+        if self.use_class_prompt:
+            self.class_prompts = nn.ModuleDict()
         if self.use_topology_prompt:
             self.topology_prompts = nn.ModuleDict()
 
-        # 3. Buffers for prototypes (with Optimal Transport Wasserstein Router)
-        self.task_prototype_buffer = TaskPrototypeBuffer(use_wasserstein=use_wasserstein)
+        # 3. Buffers for prototypes (with Margin-Aware Optimal Transport Router)
+        self.task_prototype_buffer = TaskPrototypeBuffer(
+            num_support_nodes=num_support_nodes,
+            use_wasserstein=use_wasserstein,
+            margin_threshold=margin_threshold,
+            ot_weight=ot_weight,
+            support_mode=support_mode
+        )
         self.class_prototype_buffer = ClassPrototypeBuffer()
 
     def freeze_backbone(self):
@@ -60,48 +72,53 @@ class TriPFramework(nn.Module):
     def add_task_prompts(self, task_id):
         """Creates lightweight Feature, Class, and Topological prompt modules for task t."""
         str_id = str(task_id)
-        fp = FeaturePrompt(self.in_features, num_prompts_k=self.prompt_k).to(self.device)
-        cp = ClassPrompt(self.hidden_dim).to(self.device)
-        self.feature_prompts[str_id] = fp
-        self.class_prompts[str_id] = cp
-
+        if self.use_feature_prompt:
+            fp = FeaturePrompt(self.in_features, num_prompts_k=self.prompt_k).to(self.device)
+            self.feature_prompts[str_id] = fp
+        if self.use_class_prompt:
+            cp = ClassPrompt(self.hidden_dim).to(self.device)
+            self.class_prompts[str_id] = cp
         if self.use_topology_prompt:
             tp = TopologyPrompt(self.in_features, hidden_dim=16).to(self.device)
             self.topology_prompts[str_id] = tp
 
     def get_task_prompts(self, task_id):
         str_id = str(task_id)
-        fp = self.feature_prompts[str_id]
-        cp = self.class_prompts[str_id]
+        fp = self.feature_prompts[str_id] if self.use_feature_prompt else None
+        cp = self.class_prompts[str_id] if self.use_class_prompt else None
         tp = self.topology_prompts[str_id] if self.use_topology_prompt else None
-        return fp, cp, tp
+        return [p for p in [fp, cp, tp] if p is not None]
 
     def encode(self, x, edge_index, task_id, node_indices=None):
         """
-        Calculates Dual-Space prompted representations:
-          X_hat = x + p_fea
-          A_hat = A * gamma_topo
-          h_tilde_v = f_theta(X_hat, A_hat) * q_t^cls
-        Optionally computes only for node_indices to save gigabytes of VRAM.
+        Calculates prompted representations:
+          X_hat = x + p_fea (if feature prompt active)
+          A_hat = A * gamma_topo (if topological prompt active)
+          h_tilde_v = f_theta(X_hat, A_hat) * q_t^cls (if class prompt active)
         """
         str_id = str(task_id)
-        fp = self.feature_prompts[str_id]
-        cp = self.class_prompts[str_id]
 
         # 1. Feature Prompt modification
-        x_prompted = fp(x)
+        if self.use_feature_prompt and str_id in self.feature_prompts:
+            x_prompted = self.feature_prompts[str_id](x)
+        else:
+            x_prompted = x
 
-        # 2. Topological Structural Prompt modulation (Upgrade 1)
+        # 2. Topological Structural Prompt modulation
         if self.use_topology_prompt and str_id in self.topology_prompts:
             edge_mod = self.topology_prompts[str_id](x, edge_index)
         else:
             edge_mod = None
 
-        # 3. Frozen GNN encoding with dual-space prompts
+        # 3. Frozen GNN encoding
         h = self.backbone(x_prompted, edge_index, edge_weight_mod=edge_mod, node_indices=node_indices)
 
         # 4. Class Prompt feature-wise gating
-        h_tilde = cp(h)
+        if self.use_class_prompt and str_id in self.class_prompts:
+            h_tilde = self.class_prompts[str_id](h)
+        else:
+            h_tilde = h
+
         # L2-normalize for stable cosine similarity
         h_tilde = F.normalize(h_tilde, p=2, dim=-1)
         return h_tilde
@@ -154,18 +171,18 @@ class TriPFramework(nn.Module):
 
         return total_loss.mean()
 
-    def predict(self, x, edge_index, test_nodes, observed_classes):
+    def predict(self, x, edge_index, test_nodes, observed_classes, true_task_id=None, return_task_id=False):
         """
-        Class-incremental inference without task labels (Section 4.6):
-          1. Retrieve closest task prototype: t* = argmax cos(m_test, m_i)
+        Class-incremental inference without task labels:
+          1. Retrieve closest task prototype: t* = query_task(test_x)
           2. Compute embeddings with prompts from task t*
           3. Predict class with highest prototype similarity across ALL observed classes
         """
         self.eval()
         with torch.no_grad():
             test_x = x[test_nodes]
-            # 1. Query most relevant task prompt
-            t_star = self.task_prototype_buffer.query_task(test_x)
+            # 1. Query most relevant task prompt (with optional true_task_id tracking)
+            t_star = self.task_prototype_buffer.query_task(test_x, true_task_id=true_task_id)
 
             # 2. Extract prompted node embeddings using task t* prompts ONLY for test_nodes
             test_h = self.encode(x, edge_index, t_star, node_indices=test_nodes)
@@ -178,4 +195,6 @@ class TriPFramework(nn.Module):
 
             # Map predicted index back to actual class ID
             pred_classes = torch.tensor([observed_classes[i] for i in preds_idx.cpu().numpy()], device=self.device)
+            if return_task_id:
+                return pred_classes, t_star
             return pred_classes

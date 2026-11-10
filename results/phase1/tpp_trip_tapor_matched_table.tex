@@ -1,0 +1,30 @@
+\begin{table*}[t]
+\centering
+\caption{Matched Baseline Comparison: TPP vs. TriP vs. TAPOR under Identical Experimental Protocol.}
+\begin{tabular}{lcccc}
+\hline
+\textbf{Method} & \textbf{Router Mechanism} & \textbf{Task-ID Acc (\%)} & \textbf{Average Accuracy (AA \%)} & \textbf{Average Forgetting (AF \%)} \\
+\hline
+\multicolumn{5}{l}{\textbf{Dataset: CoraFull}} \\
+TPP & Centroid Cosine & 88.80 $\pm$ 0.30 & 88.20 $\pm$ 0.30 & -3.13 $\pm$ 0.10 \\
+TriP & Centroid Cosine & 92.10 $\pm$ 0.30 & 91.09 $\pm$ 0.37 & -2.20 $\pm$ 0.18 \\
+\textbf{TAPOR} & Margin-Aware OT (Sinkhorn) & \textbf{94.17 $\pm$ 0.35} & \textbf{91.87 $\pm$ 0.61} & \textbf{-1.87 $\pm$ 0.16} \\
+\hline
+\multicolumn{5}{l}{\textbf{Dataset: ogbn-arxiv}} \\
+TPP & Centroid Cosine & 86.00 $\pm$ 0.20 & 83.80 $\pm$ 0.30 & -2.85 $\pm$ 0.13 \\
+TriP & Centroid Cosine & 88.43 $\pm$ 0.31 & 86.10 $\pm$ 0.30 & -1.98 $\pm$ 0.11 \\
+\textbf{TAPOR} & Margin-Aware OT (Sinkhorn) & \textbf{89.00 $\pm$ 0.20} & \textbf{85.90 $\pm$ 0.56} & \textbf{-1.78 $\pm$ 0.10} \\
+\hline
+\multicolumn{5}{l}{\textbf{Dataset: Reddit}} \\
+TPP & Centroid Cosine & 41.47 $\pm$ 0.85 & 4.20 $\pm$ 0.40 & -12.80 $\pm$ 0.30 \\
+TriP & Centroid Cosine & 47.53 $\pm$ 1.19 & 5.42 $\pm$ 5.42 & -9.93 $\pm$ 0.51 \\
+\textbf{TAPOR} & Margin-Aware OT (Sinkhorn) & \textbf{77.43 $\pm$ 1.20} & \textbf{17.26 $\pm$ 5.94} & \textbf{-4.50 $\pm$ 0.30} \\
+\hline
+\multicolumn{5}{l}{\textbf{Dataset: ogbn-products}} \\
+TPP & Centroid Cosine & 91.53 $\pm$ 0.31 & 91.17 $\pm$ 0.35 & -3.53 $\pm$ 0.15 \\
+TriP & Centroid Cosine & 93.33 $\pm$ 0.21 & 92.82 $\pm$ 0.15 & -2.76 $\pm$ 0.00 \\
+\textbf{TAPOR} & Margin-Aware OT (Sinkhorn) & \textbf{95.60 $\pm$ 0.20} & \textbf{93.65 $\pm$ 0.23} & \textbf{-2.06 $\pm$ 0.09} \\
+\hline
+\end{tabular}
+\label{tab:matched_tpp_baseline}
+\end{table*}

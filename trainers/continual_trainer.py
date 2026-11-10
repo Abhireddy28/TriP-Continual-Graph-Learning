@@ -90,7 +90,7 @@ class ContinualTrainer:
                 test_nodes = self.tasks[j]["test_nodes"].to(self.model.device)
                 test_y = y[test_nodes].to(self.model.device)
 
-                preds = self.model.predict(x, edge_index, test_nodes, observed_classes)
+                preds = self.model.predict(x, edge_index, test_nodes, observed_classes, true_task_id=j)
                 acc = (preds == test_y).float().mean().item() * 100.0
                 self.accuracy_matrix[t, j] = acc
                 print(f"  Accuracy on Task {j + 1} test set: {acc:.2f}%")
@@ -109,14 +109,23 @@ class ContinualTrainer:
         else:
             avg_forgetting = 0.0
 
+        # Task-ID routing accuracy and Sinkhorn trigger rate
+        tot_q = max(1, self.model.task_prototype_buffer.total_queries)
+        task_id_acc = (self.model.task_prototype_buffer.task_id_correct_count / tot_q) * 100.0
+        sinkhorn_rate = (self.model.task_prototype_buffer.sinkhorn_triggers / tot_q) * 100.0
+
         print(f"\n==========================================")
         print(f"=== Continual Graph Learning Finished ===")
-        print(f"Average Accuracy (AA): {avg_accuracy:.2f}%")
-        print(f"Average Forgetting (AF): {avg_forgetting:.2f}%")
+        print(f"Average Accuracy (AA):       {avg_accuracy:.2f}%")
+        print(f"Average Forgetting (AF):     {avg_forgetting:.2f}%")
+        print(f"Task-ID Routing Accuracy:    {task_id_acc:.2f}%")
+        print(f"Sinkhorn Trigger Rate:       {sinkhorn_rate:.2f}%")
         print(f"==========================================")
 
         return {
             "accuracy_matrix": self.accuracy_matrix,
             "average_accuracy": avg_accuracy,
-            "average_forgetting": avg_forgetting
+            "average_forgetting": avg_forgetting,
+            "task_id_accuracy": task_id_acc,
+            "sinkhorn_trigger_rate": sinkhorn_rate
         }

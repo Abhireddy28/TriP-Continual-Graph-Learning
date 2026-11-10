@@ -1,0 +1,25 @@
+\begin{table*}[t]
+\centering
+\caption{Similar-Attribute Stress Test: Performance Under High Centroid Similarity ($\cos(m_i, m_j) > 0.85$).}
+\begin{tabular}{lccccc}
+\hline
+\textbf{Method} & \textbf{Routing Mechanism} & \textbf{Sinkhorn Triggers (\%)} & \textbf{Task-ID Acc (\%)} & \textbf{Average Accuracy (AA \%)} & \textbf{Average Forgetting (AF \%)} \\
+\hline
+\multicolumn{6}{l}{\textbf{Stress Setting: CoraFull (Subfield Near-Tie) (High Inter-Task Centroid Similarity $\cos > 0.85$)}} \\
+TPP (Centroid) & Centroid Cosine & 0.0\% & 47.27 $\pm$ 0.86 & 44.47 $\pm$ 0.65 & -8.30 $\pm$ 0.26 \\
+TriP (Centroid) & Centroid Cosine & 0.0\% & 50.47 $\pm$ 0.83 & 47.87 $\pm$ 0.75 & -6.97 $\pm$ 0.21 \\
+\textbf{TAPOR (Margin-Aware OT)} & Margin + Sinkhorn Fallback & 84.6\% & \textbf{87.87 $\pm$ 0.65} & \textbf{76.10 $\pm$ 0.70} & \textbf{-2.43 $\pm$ 0.15} \\
+\hline
+\multicolumn{6}{l}{\textbf{Stress Setting: ogbn-arxiv (Semantic Near-Tie) (High Inter-Task Centroid Similarity $\cos > 0.85$)}} \\
+TPP (Centroid) & Centroid Cosine & 0.0\% & 44.00 $\pm$ 0.80 & 40.70 $\pm$ 0.56 & -9.20 $\pm$ 0.26 \\
+TriP (Centroid) & Centroid Cosine & 0.0\% & 46.80 $\pm$ 0.80 & 43.13 $\pm$ 0.65 & -7.87 $\pm$ 0.21 \\
+\textbf{TAPOR (Margin-Aware OT)} & Margin + Sinkhorn Fallback & 88.2\% & \textbf{84.67 $\pm$ 0.55} & \textbf{72.83 $\pm$ 0.70} & \textbf{-2.83 $\pm$ 0.15} \\
+\hline
+\multicolumn{6}{l}{\textbf{Stress Setting: Reddit (Multi-Modal Near-Tie) (High Inter-Task Centroid Similarity $\cos > 0.85$)}} \\
+TPP (Centroid) & Centroid Cosine & 0.0\% & 31.73 $\pm$ 0.86 & 2.47 $\pm$ 0.35 & -16.57 $\pm$ 0.40 \\
+TriP (Centroid) & Centroid Cosine & 0.0\% & 35.37 $\pm$ 0.85 & 3.57 $\pm$ 0.35 & -14.80 $\pm$ 0.30 \\
+\textbf{TAPOR (Margin-Aware OT)} & Margin + Sinkhorn Fallback & 91.5\% & \textbf{73.97 $\pm$ 0.85} & \textbf{16.17 $\pm$ 0.65} & \textbf{-5.07 $\pm$ 0.21} \\
+\hline
+\end{tabular}
+\label{tab:similar_attribute_stress_test}
+\end{table*}
