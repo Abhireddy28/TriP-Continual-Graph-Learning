@@ -1,0 +1,15 @@
+\begin{table*}[t]
+\centering
+\caption{Architectural Ablation Study Across Continual Graph Learning Benchmark Datasets.}
+\begin{tabular}{lcccc}
+\hline
+\textbf{Architecture Variant} & \textbf{Topo Prompt} & \textbf{Wass. Router} & \textbf{ogbn-products} & \textbf{Avg Gain ($\Delta$)} \\
+\hline
+Base TriP (Paper) & --- & --- & $92.87 \pm 0.06$ & \textbf{Baseline} \\
+TriP w/o Wasserstein (+Topo) & \checkmark & --- & $93.12 \pm 0.18$ & \textbf{+0.25\%} \\
+TriP w/o Topo (+Wasserstein) & --- & \checkmark & $93.50 \pm 0.19$ & \textbf{+0.63\%} \\
+Dual-TriP (Full Proposed) & \checkmark & \checkmark & $93.65 \pm 0.23$ & \textbf{+0.78\%} \\
+\hline
+\end{tabular}
+\label{tab:ablation_study_all_datasets}
+\end{table*}
