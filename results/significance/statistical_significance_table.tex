@@ -1,11 +1,14 @@
 \begin{table*}[t]
 \centering
-\caption{Statistical Significance Test: TAPOR (Full Method) vs. Base TriP Baseline ($p < 0.05$).}
+\caption{Statistical Significance Test: TAPOR (Ours) vs. Base TriP Baseline ($p < 0.05$).}
 \begin{tabular}{lccccccc}
 \hline
-\textbf{Dataset} & \textbf{Base Paper (AA)} & \textbf{TAPOR (Full Method) (AA)} & \textbf{Gain ($\Delta$)} & \textbf{$t$-stat} & \textbf{$p$-value} & \textbf{Significance} & \textbf{95\% CI} \\
+\textbf{Dataset} & \textbf{Base Paper (AA)} & \textbf{TAPOR (Ours) (AA)} & \textbf{Gain ($\Delta$)} & \textbf{$t$-stat} & \textbf{$p$-value} & \textbf{Significance} & \textbf{95\% CI} \\
 \hline
+CoraFull & $91.09 \pm 0.37$ & $91.87 \pm 0.58$ & \textbf{+0.78\%} & 2.832 & 0.1053 & Not Significant & [-0.40, 1.96] \\
+ogbn-arxiv & $86.10 \pm 0.30$ & $85.90 \pm 0.56$ & \textbf{+-0.20\%} & -0.795 & 0.5101 & Not Significant & [-1.28, 0.88] \\
 Reddit & $86.80 \pm 0.40$ & $89.43 \pm 0.35$ & \textbf{+2.63\%} & 79.000 & 0.0002* & \textbf{Significant} ($p < 0.05$) & [2.49, 2.78] \\
+ogbn-products & $92.82 \pm 0.15$ & $93.65 \pm 0.23$ & \textbf{+0.83\%} & 13.158 & 0.0057* & \textbf{Significant} ($p < 0.05$) & [0.56, 1.11] \\
 \hline
 \end{tabular}
 \label{tab:statistical_significance_all}

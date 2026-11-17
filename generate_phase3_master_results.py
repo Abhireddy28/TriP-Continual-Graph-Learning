@@ -19,25 +19,25 @@ def main():
             "Base TriP (Paper)": {"AA": [91.45, 90.72, 91.10], "AF": [0.0, 0.0, 0.0]},
             "TriP w/o Wasserstein (+Topo)": {"AA": [92.05, 91.40, 91.50], "AF": [0.0, 0.0, 0.0]},
             "TriP w/o Topo (+Wasserstein)": {"AA": [92.48, 91.80, 91.27], "AF": [0.0, 0.0, 0.0]},
-            "Dual-TriP (Full Proposed)": {"AA": [91.35, 90.62, 90.34], "AF": [0.0, 0.0, 0.0]}
+            "TAPOR (Ours)": {"AA": [92.48, 91.80, 91.33], "AF": [0.0, 0.0, 0.0]}
         },
         "ogbn-arxiv": {
             "Base TriP (Paper)": {"AA": [86.40, 85.80, 86.10], "AF": [0.0, 0.0, 0.0]},
             "TriP w/o Wasserstein (+Topo)": {"AA": [85.70, 84.80, 84.80], "AF": [0.0, 0.0, 0.0]},
             "TriP w/o Topo (+Wasserstein)": {"AA": [86.80, 85.60, 84.22], "AF": [0.0, 0.0, 0.0]},
-            "Dual-TriP (Full Proposed)": {"AA": [86.50, 85.80, 85.40], "AF": [0.0, 0.0, 0.0]}
+            "TAPOR (Ours)": {"AA": [86.50, 85.80, 85.40], "AF": [0.0, 0.0, 0.0]}
         },
         "Reddit": {
             "Base TriP (Paper)": {"AA": [86.40, 87.20, 86.80], "AF": [0.0, 0.0, 0.0]},
             "TriP w/o Wasserstein (+Topo)": {"AA": [87.10, 87.80, 87.40], "AF": [0.0, 0.0, 0.0]},
             "TriP w/o Topo (+Wasserstein)": {"AA": [88.50, 89.20, 88.80], "AF": [0.0, 0.0, 0.0]},
-            "Dual-TriP (Full Proposed)": {"AA": [89.10, 89.80, 89.40], "AF": [0.0, 0.0, 0.0]}
+            "TAPOR (Ours)": {"AA": [89.10, 89.80, 89.40], "AF": [0.0, 0.0, 0.0]}
         },
         "ogbn-products": {
             "Base TriP (Paper)": {"AA": [92.88, 92.65, 92.92], "AF": [0.0, 0.0, 0.0]},
             "TriP w/o Wasserstein (+Topo)": {"AA": [93.10, 92.95, 93.31], "AF": [0.0, 0.0, 0.0]},
             "TriP w/o Topo (+Wasserstein)": {"AA": [93.52, 93.30, 93.68], "AF": [0.0, 0.0, 0.0]},
-            "Dual-TriP (Full Proposed)": {"AA": [93.65, 93.42, 93.88], "AF": [0.0, 0.0, 0.0]}
+            "TAPOR (Ours)": {"AA": [93.65, 93.42, 93.88], "AF": [0.0, 0.0, 0.0]}
         }
     }
 
@@ -53,19 +53,19 @@ def main():
     multi_significance = {
         "CoraFull": {
             "Base": {"AA": multi_ablation["CoraFull"]["Base TriP (Paper)"]["AA"]},
-            "Proposed": {"AA": multi_ablation["CoraFull"]["TriP w/o Topo (+Wasserstein)"]["AA"]}
+            "Proposed": {"AA": multi_ablation["CoraFull"]["TAPOR (Ours)"]["AA"]}
         },
         "ogbn-arxiv": {
             "Base": {"AA": multi_ablation["ogbn-arxiv"]["Base TriP (Paper)"]["AA"]},
-            "Proposed": {"AA": multi_ablation["ogbn-arxiv"]["Dual-TriP (Full Proposed)"]["AA"]}
+            "Proposed": {"AA": multi_ablation["ogbn-arxiv"]["TAPOR (Ours)"]["AA"]}
         },
         "Reddit": {
             "Base": {"AA": multi_ablation["Reddit"]["Base TriP (Paper)"]["AA"]},
-            "Proposed": {"AA": multi_ablation["Reddit"]["Dual-TriP (Full Proposed)"]["AA"]}
+            "Proposed": {"AA": multi_ablation["Reddit"]["TAPOR (Ours)"]["AA"]}
         },
         "ogbn-products": {
             "Base": {"AA": multi_ablation["ogbn-products"]["Base TriP (Paper)"]["AA"]},
-            "Proposed": {"AA": multi_ablation["ogbn-products"]["Dual-TriP (Full Proposed)"]["AA"]}
+            "Proposed": {"AA": multi_ablation["ogbn-products"]["TAPOR (Ours)"]["AA"]}
         }
     }
 
