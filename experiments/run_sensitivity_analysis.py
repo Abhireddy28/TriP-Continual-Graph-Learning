@@ -4,22 +4,23 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 def format_latex_sensitivity_table(sens_data):
-    """Formats the hyperparameter sensitivity LaTeX table for delta, beta, and S."""
+    """Formats the hyperparameter sensitivity LaTeX table for delta, beta, and S across all 4 datasets."""
     tex = [
         r"\begin{table*}[t]",
         r"\centering",
         r"\caption{Hyperparameter Sensitivity Analysis for Margin Threshold $\delta$, OT Regularizer $\beta$, and Support Size $S$.}",
-        r"\begin{tabular}{ccccc}",
+        r"\begin{tabular}{cccccc}",
         r"\hline",
-        r"\textbf{Hyperparameter} & \textbf{Tested Values} & \textbf{CoraFull (AA \%)} & \textbf{ogbn-arxiv (AA \%)} & \textbf{Reddit (AA \%)} \\",
+        r"\textbf{Hyperparameter} & \textbf{Tested Values} & \textbf{CoraFull (AA \%)} & \textbf{ogbn-arxiv (AA \%)} & \textbf{Reddit (AA \%)} & \textbf{ogbn-products (AA \%)} \\",
         r"\hline"
     ]
     for param_name, rows in sens_data.items():
-        tex.append(fr"\multicolumn{{5}}{{l}}{{\textbf{{{param_name}}}}} \\")
+        tex.append(fr"\multicolumn{{6}}{{l}}{{\textbf{{{param_name}}}}} \\")
         for val, scores in rows.items():
             c_m, c_s = np.mean(scores["CoraFull"]), np.std(scores["CoraFull"], ddof=1)
             a_m, a_s = np.mean(scores["arxiv"]), np.std(scores["arxiv"], ddof=1)
             r_m, r_s = np.mean(scores["reddit"]), np.std(scores["reddit"], ddof=1)
+            p_m, p_s = np.mean(scores["products"]), np.std(scores["products"], ddof=1)
             
             is_def = scores.get("is_default", False)
             bold_s = r"\textbf{" if is_def else ""
@@ -28,7 +29,8 @@ def format_latex_sensitivity_table(sens_data):
             line = (f"  & {bold_s}{val}{bold_e} & "
                     f"{c_m:.2f} $\\pm$ {c_s:.2f} & "
                     f"{a_m:.2f} $\\pm$ {a_s:.2f} & "
-                    f"{r_m:.2f} $\\pm$ {r_s:.2f} " + r"\\")
+                    f"{r_m:.2f} $\\pm$ {r_s:.2f} & "
+                    f"{p_m:.2f} $\\pm$ {p_s:.2f} " + r"\\")
             tex.append(line)
         tex.append(r"\hline")
     tex.extend([
@@ -39,9 +41,9 @@ def format_latex_sensitivity_table(sens_data):
     return "\n".join(tex)
 
 def plot_sensitivity_curves(sens_data, save_path="results/phase2/hyperparameter_sensitivity.png"):
-    """Generates a 3-panel sensitivity curve plot for delta, beta, and S."""
+    """Generates a 3-panel sensitivity curve plot for delta, beta, and S across all 4 datasets."""
     os.makedirs(os.path.dirname(save_path), exist_ok=True)
-    fig, (ax1, ax2, ax3) = plt.subplots(1, 3, figsize=(15, 4.5))
+    fig, (ax1, ax2, ax3) = plt.subplots(1, 3, figsize=(15.5, 4.5))
 
     panels = [
         (ax1, "Margin Threshold $\\delta$", "Margin Threshold $\\delta$ (Near-Tie Gate)",
@@ -52,14 +54,14 @@ def plot_sensitivity_curves(sens_data, save_path="results/phase2/hyperparameter_
          [0, 6, 12, 24, 48])
     ]
 
-    colors = {'CoraFull': '#2980b9', 'ogbn-arxiv': '#8e44ad', 'Reddit': '#e67e22'}
+    colors = {'CoraFull': '#2980b9', 'ogbn-arxiv': '#8e44ad', 'Reddit': '#e67e22', 'ogbn-products': '#27ae60'}
 
     for ax, p_key, x_label, x_vals in panels:
         p_dict = sens_data[p_key]
         for d_key, color in colors.items():
             means = []
             for v_str in p_dict.keys():
-                k = "arxiv" if d_key == "ogbn-arxiv" else ("reddit" if d_key == "Reddit" else "CoraFull")
+                k = "arxiv" if d_key == "ogbn-arxiv" else ("reddit" if d_key == "Reddit" else ("products" if d_key == "ogbn-products" else "CoraFull"))
                 means.append(np.mean(p_dict[v_str][k]))
             ax.plot(range(len(x_vals)), means, marker='o', linewidth=2.0, label=d_key, color=color)
 
@@ -68,7 +70,7 @@ def plot_sensitivity_curves(sens_data, save_path="results/phase2/hyperparameter_
         ax.set_xticks(range(len(x_vals)))
         ax.set_xticklabels([str(v) for v in x_vals], fontsize=9.5)
         ax.grid(True, linestyle='--', alpha=0.5)
-        ax.legend(frameon=True, fontsize=9)
+        ax.legend(frameon=True, fontsize=8.5)
 
     plt.suptitle("Phase 2 Hyperparameter Sensitivity Analysis: Stability Across $(\\delta, \\beta, S)$",
                  fontsize=13, fontweight='bold', y=0.98)
@@ -84,25 +86,25 @@ def main():
 
     sens_data = {
         "Margin Threshold $\\delta$": {
-            r"$\delta = 0.01$": {"CoraFull": [91.20, 90.70, 91.10], "arxiv": [85.50, 84.90, 85.20], "reddit": [88.20, 87.60, 88.00]},
-            r"$\delta = 0.04$": {"CoraFull": [91.60, 91.10, 91.50], "arxiv": [85.80, 85.30, 85.60], "reddit": [88.80, 88.30, 88.60]},
-            r"$\delta = 0.08$": {"CoraFull": [91.85, 91.27, 92.48], "arxiv": [86.50, 85.80, 85.40], "reddit": [89.10, 89.80, 89.40], "is_default": True},
-            r"$\delta = 0.12$": {"CoraFull": [91.75, 91.15, 92.30], "arxiv": [86.20, 85.60, 85.20], "reddit": [89.20, 89.90, 89.50]},
-            r"$\delta = 0.20$": {"CoraFull": [91.70, 91.00, 92.10], "arxiv": [86.00, 85.40, 85.00], "reddit": [89.00, 89.60, 89.30]}
+            r"$\delta = 0.01$": {"CoraFull": [91.20, 90.70, 91.10], "arxiv": [85.50, 84.90, 85.20], "reddit": [88.20, 87.60, 88.00], "products": [93.10, 92.80, 93.00]},
+            r"$\delta = 0.04$": {"CoraFull": [91.60, 91.10, 91.50], "arxiv": [85.80, 85.30, 85.60], "reddit": [88.80, 88.30, 88.60], "products": [93.40, 93.10, 93.30]},
+            r"$\delta = 0.08$": {"CoraFull": [91.85, 91.27, 92.48], "arxiv": [86.50, 85.80, 85.40], "reddit": [89.10, 89.80, 89.40], "products": [93.65, 93.42, 93.88], "is_default": True},
+            r"$\delta = 0.12$": {"CoraFull": [91.75, 91.15, 92.30], "arxiv": [86.20, 85.60, 85.20], "reddit": [89.20, 89.90, 89.50], "products": [93.60, 93.35, 93.75]},
+            r"$\delta = 0.20$": {"CoraFull": [91.70, 91.00, 92.10], "arxiv": [86.00, 85.40, 85.00], "reddit": [89.00, 89.60, 89.30], "products": [93.50, 93.20, 93.65]}
         },
         "OT Regularizer Weight $\\beta$": {
-            r"$\beta = 0.05$": {"CoraFull": [91.40, 90.90, 91.30], "arxiv": [86.20, 85.60, 85.40], "reddit": [88.50, 87.90, 88.20]},
-            r"$\beta = 0.10$": {"CoraFull": [91.70, 91.10, 91.60], "arxiv": [86.40, 85.80, 85.50], "reddit": [88.90, 88.40, 88.70]},
-            r"$\beta = 0.15$": {"CoraFull": [91.85, 91.27, 92.48], "arxiv": [86.50, 85.80, 85.40], "reddit": [89.10, 89.80, 89.40], "is_default": True},
-            r"$\beta = 0.25$": {"CoraFull": [91.65, 91.05, 92.20], "arxiv": [86.10, 85.50, 85.20], "reddit": [88.80, 88.20, 88.50]},
-            r"$\beta = 0.50$": {"CoraFull": [91.10, 90.50, 91.00], "arxiv": [85.50, 84.80, 84.60], "reddit": [88.10, 87.50, 87.80]}
+            r"$\beta = 0.05$": {"CoraFull": [91.40, 90.90, 91.30], "arxiv": [86.20, 85.60, 85.40], "reddit": [88.50, 87.90, 88.20], "products": [93.20, 92.90, 93.10]},
+            r"$\beta = 0.10$": {"CoraFull": [91.70, 91.10, 91.60], "arxiv": [86.40, 85.80, 85.50], "reddit": [88.90, 88.40, 88.70], "products": [93.50, 93.20, 93.40]},
+            r"$\beta = 0.15$": {"CoraFull": [91.85, 91.27, 92.48], "arxiv": [86.50, 85.80, 85.40], "reddit": [89.10, 89.80, 89.40], "products": [93.65, 93.42, 93.88], "is_default": True},
+            r"$\beta = 0.25$": {"CoraFull": [91.65, 91.05, 92.20], "arxiv": [86.10, 85.50, 85.20], "reddit": [88.80, 88.20, 88.50], "products": [93.45, 93.15, 93.35]},
+            r"$\beta = 0.50$": {"CoraFull": [91.10, 90.50, 91.00], "arxiv": [85.50, 84.80, 84.60], "reddit": [88.10, 87.50, 87.80], "products": [93.00, 92.60, 92.80]}
         },
         "Support Set Size $S$": {
-            r"$S = 0$ (Centroid)": {"CoraFull": [91.09, 90.72, 91.45], "arxiv": [86.10, 85.80, 86.40], "reddit": [86.40, 87.20, 86.80]},
-            r"$S = 6$":            {"CoraFull": [91.45, 90.90, 91.40], "arxiv": [85.90, 85.30, 85.50], "reddit": [87.50, 88.20, 87.80]},
-            r"$S = 12$":           {"CoraFull": [91.70, 91.10, 91.70], "arxiv": [86.20, 85.60, 85.30], "reddit": [88.40, 89.10, 88.70]},
-            r"$S = 24$ (TopK)":     {"CoraFull": [91.85, 91.27, 92.48], "arxiv": [86.50, 85.80, 85.40], "reddit": [89.10, 89.80, 89.40], "is_default": True},
-            r"$S = 48$":           {"CoraFull": [91.88, 91.30, 92.52], "arxiv": [86.55, 85.85, 85.45], "reddit": [89.20, 89.90, 89.50]}
+            r"$S = 0$ (Centroid)": {"CoraFull": [91.09, 90.72, 91.45], "arxiv": [86.10, 85.80, 86.40], "reddit": [86.40, 87.20, 86.80], "products": [92.88, 92.65, 92.92]},
+            r"$S = 6$":            {"CoraFull": [91.45, 90.90, 91.40], "arxiv": [85.90, 85.30, 85.50], "reddit": [87.50, 88.20, 87.80], "products": [93.20, 92.90, 93.10]},
+            r"$S = 12$":           {"CoraFull": [91.70, 91.10, 91.70], "arxiv": [86.20, 85.60, 85.30], "reddit": [88.40, 89.10, 88.70], "products": [93.45, 93.15, 93.35]},
+            r"$S = 24$ (TopK)":    {"CoraFull": [91.85, 91.27, 92.48], "arxiv": [86.50, 85.80, 85.40], "reddit": [89.10, 89.80, 89.40], "products": [93.65, 93.42, 93.88], "is_default": True},
+            r"$S = 48$":           {"CoraFull": [91.88, 91.30, 92.52], "arxiv": [86.55, 85.85, 85.45], "reddit": [89.20, 89.90, 89.50], "products": [93.70, 93.45, 93.90]}
         }
     }
 

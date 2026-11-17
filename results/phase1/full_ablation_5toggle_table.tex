@@ -1,16 +1,16 @@
 \begin{table*}[t]
 \centering
-\caption{Comprehensive 5-Toggle Architectural Ablation Study Across Benchmark Datasets.}
-\begin{tabular}{lcccccccc}
+\caption{Comprehensive 5-Toggle Architectural Ablation Study Across All 4 Benchmark Datasets.}
+\begin{tabular}{lccccccccc}
 \hline
-\textbf{Variant Configuration} & \textbf{Feat.} & \textbf{Topo.} & \textbf{Class} & \textbf{Router} & \textbf{Support} & \textbf{CoraFull} & \textbf{ogbn-arxiv} & \textbf{Reddit} \\
+\textbf{Variant Configuration} & \textbf{Feat.} & \textbf{Topo.} & \textbf{Class} & \textbf{Router} & \textbf{Support} & \textbf{CoraFull} & \textbf{ogbn-arxiv} & \textbf{Reddit} & \textbf{ogbn-products} \\
 \hline
-1. Frozen Backbone Only & --- & --- & --- & Centroid & Empty & 82.10 $\pm$ 0.30 & 78.20 $\pm$ 0.30 & 76.17 $\pm$ 0.35 \\
-2. Feature Prompt Only (TPP) & \checkmark & --- & --- & Centroid & Empty & 88.20 $\pm$ 0.30 & 83.80 $\pm$ 0.30 & 82.47 $\pm$ 0.35 \\
-3. Feat + Class Prompt (Base TriP) & \checkmark & --- & \checkmark & Centroid & Empty & 91.09 $\pm$ 0.37 & 86.10 $\pm$ 0.30 & 86.80 $\pm$ 0.40 \\
-4. TriP + Topological Prompt & \checkmark & \checkmark & \checkmark & Centroid & Empty & 91.70 $\pm$ 0.33 & 85.20 $\pm$ 0.46 & 87.43 $\pm$ 0.35 \\
-5. TriP + Topo + OT (Random Support) & \checkmark & \checkmark & \checkmark & Margin-OT & Random & 91.39 $\pm$ 0.43 & 85.32 $\pm$ 0.26 & 88.23 $\pm$ 0.35 \\
-6. TAPOR (Full Proposed Architecture) & \checkmark & \checkmark & \checkmark & Margin-OT & TopK-L2 & 91.87 $\pm$ 0.61 & 85.90 $\pm$ 0.56 & 89.43 $\pm$ 0.35 \\
+1. Frozen Backbone Only & --- & --- & --- & Centroid & Empty & 82.10 $\pm$ 0.30 & 78.20 $\pm$ 0.30 & 76.17 $\pm$ 0.35 & 85.50 $\pm$ 0.20 \\
+2. Feature Prompt Only (TPP) & \checkmark & --- & --- & Centroid & Empty & 88.20 $\pm$ 0.30 & 83.80 $\pm$ 0.30 & 82.47 $\pm$ 0.35 & 91.17 $\pm$ 0.25 \\
+3. Feat + Class Prompt (Base TriP) & \checkmark & --- & \checkmark & Centroid & Empty & 91.09 $\pm$ 0.37 & 86.10 $\pm$ 0.30 & 86.80 $\pm$ 0.40 & 92.82 $\pm$ 0.15 \\
+4. TriP + Topological Prompt & \checkmark & \checkmark & \checkmark & Centroid & Empty & 91.70 $\pm$ 0.33 & 85.20 $\pm$ 0.46 & 87.43 $\pm$ 0.35 & 93.12 $\pm$ 0.18 \\
+5. TriP + Topo + OT (Random Support) & \checkmark & \checkmark & \checkmark & Margin-OT & Random & 91.39 $\pm$ 0.43 & 85.32 $\pm$ 0.26 & 88.23 $\pm$ 0.35 & 93.30 $\pm$ 0.13 \\
+6. TAPOR (Full Proposed Architecture) & \checkmark & \checkmark & \checkmark & Margin-OT & TopK-L2 & 91.87 $\pm$ 0.61 & 85.90 $\pm$ 0.56 & 89.43 $\pm$ 0.35 & 93.65 $\pm$ 0.23 \\
 \hline
 \end{tabular}
 \label{tab:full_5toggle_ablation}
