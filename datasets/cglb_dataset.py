@@ -110,6 +110,12 @@ class CGLBDatasetManager:
             if x is None:
                 x = torch.from_numpy(np_data[np_data.files[0]]).float()
 
+            # Standardize Reddit features (z-score normalization: zero-mean, unit variance)
+            # Solves word-frequency centroid collapse across dense subreddits
+            x_mean = x.mean(dim=0, keepdim=True)
+            x_std = x.std(dim=0, keepdim=True) + 1e-6
+            x = (x - x_mean) / x_std
+
             # Find labels
             y = None
             for y_key in ['label', 'labels', 'y']:

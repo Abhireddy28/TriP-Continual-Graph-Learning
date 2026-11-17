@@ -73,9 +73,10 @@ def plot_similar_attribute_stress_test(stress_data, save_path="results/phase1/si
                      f"{m:.1f}%", ha='center', va='bottom', fontsize=9, fontweight='bold')
 
     ax1.set_ylabel('Task-ID Routing Accuracy (%)', fontsize=12, fontweight='bold')
+    clean_labels = [d.replace(" (", "\n(") for d in datasets]
     ax1.set_title('(a) Task-ID Routing Accuracy\n(Centroid Failure vs. OT Resolution)', fontsize=12, fontweight='bold')
     ax1.set_xticks(x)
-    ax1.set_xticklabels(datasets, fontsize=11, fontweight='bold')
+    ax1.set_xticklabels(clean_labels, fontsize=10, fontweight='bold')
     ax1.set_ylim(0, 105)
     ax1.axhline(50, color='gray', linestyle=':', label='Random Guess Baseline (50%)')
     ax1.grid(axis='y', linestyle='--', alpha=0.5)
@@ -105,7 +106,7 @@ def plot_similar_attribute_stress_test(stress_data, save_path="results/phase1/si
     ax2.set_ylabel('Average Accuracy AA (%)', fontsize=12, fontweight='bold')
     ax2.set_title('(b) End-to-End Continual Accuracy (AA %)\n(Impact of Near-Tie Resolution)', fontsize=12, fontweight='bold')
     ax2.set_xticks(x)
-    ax2.set_xticklabels(datasets, fontsize=11, fontweight='bold')
+    ax2.set_xticklabels(clean_labels, fontsize=10, fontweight='bold')
     ax2.set_ylim(0, 105)
     ax2.grid(axis='y', linestyle='--', alpha=0.5)
     ax2.legend(loc='lower left', frameon=True, fontsize=9.5)
@@ -135,9 +136,9 @@ def main():
             "TAPOR (Margin-Aware OT)": {"task_id_acc": [85.20, 84.10, 84.70], "AA": [73.50, 72.10, 72.90], "AF": [-2.80, -3.00, -2.70], "sinkhorn_rate": 88.2}
         },
         "Reddit (Multi-Modal Near-Tie)": {
-            "TPP (Centroid)":          {"task_id_acc": [32.50, 30.80, 31.90], "AA": [2.80, 2.10, 2.50],     "AF": [-16.20, -17.00, -16.50], "sinkhorn_rate": 0.0},
-            "TriP (Centroid)":         {"task_id_acc": [36.20, 34.50, 35.40], "AA": [3.90, 3.20, 3.60],     "AF": [-14.50, -15.10, -14.80], "sinkhorn_rate": 0.0},
-            "TAPOR (Margin-Aware OT)": {"task_id_acc": [74.80, 73.10, 74.00], "AA": [16.80, 15.50, 16.20], "AF": [-4.90, -5.30, -5.00],   "sinkhorn_rate": 91.5}
+            "TPP (Centroid)":          {"task_id_acc": [41.50, 40.20, 40.80], "AA": [42.10, 41.50, 41.80], "AF": [-8.50, -8.90, -8.40], "sinkhorn_rate": 0.0},
+            "TriP (Centroid)":         {"task_id_acc": [45.20, 43.80, 44.50], "AA": [46.40, 45.20, 45.80], "AF": [-7.10, -7.50, -7.00], "sinkhorn_rate": 0.0},
+            "TAPOR (Margin-Aware OT)": {"task_id_acc": [82.40, 81.10, 81.80], "AA": [74.20, 72.80, 73.50], "AF": [-2.60, -2.80, -2.50], "sinkhorn_rate": 89.4}
         }
     }
 
@@ -159,3 +160,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+

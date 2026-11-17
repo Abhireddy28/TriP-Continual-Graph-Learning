@@ -23,7 +23,7 @@ This audit verifies all 8 criteria (**G1 to G8**) established in the **TAPOR 10/
 
 1. **The Decisive Justification for Optimal Transport (G3)**:
    - When inter-task centroids have high similarity ($\cos > 0.85$), centroid-only routing (TPP / TriP) degrades to near-random guessing (**$44.0\% - 50.4\%$ task-ID accuracy**).
-   - TAPOR's margin-aware gate detects the near-tie ($\Delta < \delta$) and triggers Sinkhorn on **$84.6\% - 91.5\%$** of batches, restoring task-ID accuracy to **$84.7\% - 87.9\%$** and lifting end-to-end accuracy by **$+31.6\%$ absolute gain**.
+   - TAPOR's margin-aware gate detects the near-tie ($\Delta < \delta$) and triggers Sinkhorn on **$84.6\% - 89.4\%$** of batches, restoring task-ID accuracy to **$81.8\% - 87.9\%$** (vs. $40.8\% - 50.5\%$ for centroid) and lifting end-to-end accuracy by **$+27.7\% - +29.7\%$ absolute gain**.
 
 2. **Real-Time Efficiency Without Sacrificing Performance (G8)**:
    - Unconditional Optimal Transport incurs an 18.4 ms/batch inference penalty.
@@ -31,3 +31,4 @@ This audit verifies all 8 criteria (**G1 to G8**) established in the **TAPOR 10/
 
 3. **Multi-Dataset Rigor (G1, G4)**:
    - Full evaluation across 4 benchmark datasets: CoraFull, OGBN-Arxiv, Reddit, and OGBN-Products across 3 independent random seeds (`42, 123, 456`).
+

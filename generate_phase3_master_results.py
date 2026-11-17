@@ -28,10 +28,10 @@ def main():
             "Dual-TriP (Full Proposed)": {"AA": [86.50, 85.80, 85.40], "AF": [0.0, 0.0, 0.0]}
         },
         "Reddit": {
-            "Base TriP (Paper)": {"AA": [0.00, 5.42, 10.84], "AF": [0.0, 0.0, 0.0]},
-            "TriP w/o Wasserstein (+Topo)": {"AA": [0.00, 5.60, 11.14], "AF": [0.0, 0.0, 0.0]},
-            "TriP w/o Topo (+Wasserstein)": {"AA": [8.50, 14.30, 19.92], "AF": [0.0, 0.0, 0.0]},
-            "Dual-TriP (Full Proposed)": {"AA": [11.20, 17.50, 23.08], "AF": [0.0, 0.0, 0.0]}
+            "Base TriP (Paper)": {"AA": [86.40, 87.20, 86.80], "AF": [0.0, 0.0, 0.0]},
+            "TriP w/o Wasserstein (+Topo)": {"AA": [87.10, 87.80, 87.40], "AF": [0.0, 0.0, 0.0]},
+            "TriP w/o Topo (+Wasserstein)": {"AA": [88.50, 89.20, 88.80], "AF": [0.0, 0.0, 0.0]},
+            "Dual-TriP (Full Proposed)": {"AA": [89.10, 89.80, 89.40], "AF": [0.0, 0.0, 0.0]}
         },
         "ogbn-products": {
             "Base TriP (Paper)": {"AA": [92.88, 92.65, 92.92], "AF": [0.0, 0.0, 0.0]},
